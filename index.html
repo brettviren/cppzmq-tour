@@ -1,0 +1,1459 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2020-04-12 Sun 16:13 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A tour of CPPZMQ, the C++ bindings to libzmq</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="Brett Viren" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" type="text/css" href="styles/readtheorg/css/htmlize.css"/>
+<link rel="stylesheet" type="text/css" href="styles/readtheorg/css/readtheorg.css"/>
+<script type="text/javascript" src="styles/lib/js/jquery.min.js"></script>
+<script type="text/javascript" src="styles/lib/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="styles/lib/js/jquery.stickytableheaders.min.js"></script>
+<script type="text/javascript" src="styles/readtheorg/js/readtheorg.js"></script>
+<style> #content{max-width:1800px;}</style>
+<style> p{max-width:800px;}</style>
+<style> li{max-width:800px;}</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2020 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">A tour of CPPZMQ, the C++ bindings to libzmq</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#intro">Introduction</a>
+<ul>
+<li><a href="#org8602d46">Project contents</a></li>
+<li><a href="#orgcfc0fdd">This document</a></li>
+</ul>
+</li>
+<li><a href="#messages">Messages</a>
+<ul>
+<li><a href="#creating-messages">Creating messages</a></li>
+<li><a href="#resetting-messages">Resetting the message</a></li>
+<li><a href="#message-data">Accessing data in a message</a></li>
+<li><a href="#message-metadata">Message metadata</a></li>
+</ul>
+</li>
+<li><a href="#buffers">Buffers</a>
+<ul>
+<li><a href="#org07fac88">Buffer types</a></li>
+<li><a href="#org7a28221">Buffer construction</a></li>
+<li><a href="#org7c2c640">Buffer operations</a></li>
+<li><a href="#orgd674b38">Access buffer data</a></li>
+</ul>
+</li>
+<li><a href="#context">Context</a>
+<ul>
+<li><a href="#create-context">Creating a context</a></li>
+<li><a href="#context-life">Context life cycle</a></li>
+</ul>
+</li>
+<li><a href="#sockets">Socket</a>
+<ul>
+<li><a href="#socket-life">Socket life cycle</a></li>
+<li><a href="#socket-link">Socket linkage</a></li>
+<li><a href="#orgc1829cc">Sending</a></li>
+<li><a href="#org80cbb24">Receiving</a></li>
+<li><a href="#org7e5f763">Socket options</a></li>
+<li><a href="#org17fdad8">Socket properties</a></li>
+<li><a href="#org622e461">Socket references</a></li>
+<li><a href="#org765cb3d">Socket handle</a></li>
+</ul>
+</li>
+<li><a href="#monitor">Monitor</a>
+<ul>
+<li><a href="#orgceb7f26">No queue monitoring</a></li>
+</ul>
+</li>
+<li><a href="#poller">Poller</a>
+<ul>
+<li><a href="#orgae12878">Simple poller</a></li>
+<li><a href="#orgf1d7978">Active poller</a></li>
+</ul>
+</li>
+<li><a href="#multipart">Multipart</a>
+<ul>
+<li><a href="#orgeef9f5d">Multiple messages</a></li>
+<li><a href="#orgdd58f90">Multipart messages</a></li>
+</ul>
+</li>
+<li><a href="#codec">Codec</a>
+<ul>
+<li><a href="#org532278b">Why a codec</a></li>
+<li><a href="#org71a47e0">Using the codec</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org454e7ed" class="outline-2">
+<h2 id="intro">Introduction</h2>
+<div class="outline-text-2" id="text-intro">
+<p>
+The <a href="https://zeromq.org/">ZeroMQ</a> project <a href="https://github.com/zeromq/cppzmq">cppzmq</a> is a C++ binding for <a href="https://github.com/zeromq/libzmq/">libzmq</a>.  With it we can exercise the power of ZeroMQ with idiomatic, modern C++.  The bindings provide type safety, exception-based error reporting, the RAII approach to resource management.  Most <b>cppzmq</b> functionality will work with C++11 and even older and here we consider features requiring C++17 and we ignore deprecated interfaces.
+</p>
+</div>
+
+<div id="outline-container-org8602d46" class="outline-3">
+<h3 id="org8602d46">Project contents</h3>
+<div class="outline-text-3" id="text-org8602d46">
+<p>
+The <b>cppzmq</b> package core is a header-only library providing the C++ <code>namespace zmq::</code>.  Currently the library consists of two headers and here is a summary of what they provide:
+</p>
+
+<dl class="org-dl">
+<dt><code>zmq.hpp</code></dt><dd>(single part) message, context, buffer, socket, monitor, poller</dd>
+<dt><code>zmq_addon.hpp</code></dt><dd>multipart and related functions and an active poller</dd>
+</dl>
+
+<p>
+The package also provides substantial unit tests which can be mined for programming examples.  Its <a href="https://github.com/zeromq/cppzmq/blob/master/README.md">README</a> file gives instructions for formal  installation and one very simple option is copying the base <code>zmq.hpp</code> and optionally <code>zmq_addon.hpp</code> to our own package.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgcfc0fdd" class="outline-3">
+<h3 id="orgcfc0fdd">This document</h3>
+<div class="outline-text-3" id="text-orgcfc0fdd">
+<p>
+The general concepts of ZeroMQ are assumed here.  If you, the curious reader, have not yet done so please do yourself a big favor and read the entire <a href="http://zguide.zeromq.org/">ZeroMQ Guide</a>.  Read it at least twice.  I think gets even better each time I read it as I find something new and useful that I had previously missed.
+</p>
+
+<p>
+We may make effective use of <b>cppzmq</b> by reading its header files and maybe checking the unit tests.  In some cases we may also refer to the <b>libzmq</b> API documentation as the installed Unix man pages (<code>man zmq</code> to start) or <a href="http://api.zeromq.org/">online</a>.
+This document attempts to distill what was learned in the process of just such a reading.  I hope it may serve as a gentle narrative or tour that will help others quickly feel comfortable developing with <b>cppzmq</b>.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org37391aa" class="outline-2">
+<h2 id="messages">Messages</h2>
+<div class="outline-text-2" id="text-messages">
+<p>
+The <code>message_t</code> class from <code>zmq.hpp</code> is a C++ facade over an opaque <code>zmq_msg_t</code> from <b>libzmq</b>.  It is conceptually equivalent to the <code>zframe_t</code> from CZMQ, the high level C bindings to <b>libzmq</b>.  In ZeroMQ terms, <code>message_t</code> is a <i>single part</i> message in that it holds a contiguous block of memory.  Later, (sections <a href="#sockets">Socket</a> and <a href="#multipart">Multipart</a>) the idea of multiple single part messages and multipart messages are covered.
+</p>
+</div>
+
+<div id="outline-container-org5fa785e" class="outline-3">
+<h3 id="creating-messages">Creating messages</h3>
+<div class="outline-text-3" id="text-creating-messages">
+<p>
+Here are some examples of constructing a <code>message_t</code>:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Default constructs an empty message of size zero.</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span>;
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Have message allocate some memory internally.</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">size</span> = 1024;
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fce94f;">msg</span>(size);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Initialize internal memory with a copy of external data.</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">char</span> <span style="color: #fcaf3e;">data</span>[s] = {0};
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fce94f;">msg</span>(data, size);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Or, from string literal (see also str_buffer).</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span>(<span style="color: #e9b96e;">"hello world!"</span>, 12);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Initialize through iteration on a container.</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #8cc4ff;">int</span>&gt; <span style="color: #fcaf3e;">data</span> = {1,2,3};
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fce94f;">msg</span>(data.begin(), data.end());
+<span style="color: #73d216;">// </span><span style="color: #73d216;">or simply</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fce94f;">msg</span>(data);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Zero-copy provision with custom deallocation callback.</span>
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Wraps zmq_msg_init_data(3), see man page for details.</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span>(data, size, myfree, <span style="color: #e9b2e3;">nullptr</span>);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Move/swap the data of one message into a new one</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fce94f;">msg2</span>(msg);
+<span style="color: #73d216;">// </span><span style="color: #73d216;">or</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg2</span> = msg;
+
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orge683b0b" class="outline-3">
+<h3 id="resetting-messages">Resetting the message</h3>
+<div class="outline-text-3" id="text-resetting-messages">
+<p>
+We can also "rebuild" an existing message.  The methods to do this mirror the constructor prototypes:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Empty the message</span>
+msg.rebuild();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Allocate a new size</span>
+msg.rebuild(size);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Allocate and set with a copy</span>
+msg.rebuild(data, size);
+</pre>
+</div>
+
+<p>
+There is also a zero-copy version similar to the zero-copy constructor which is not shown above.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc4650b2" class="outline-3">
+<h3 id="message-data">Accessing data in a message</h3>
+<div class="outline-text-3" id="text-message-data">
+<p>
+The message is a block of bytes and we can get at those bytes in a few ways:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Size of the data in bytes </span>
+<span style="color: #8cc4ff;">size_t</span> <span style="color: #fce94f;">msg</span>.size();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Low level, type free access</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">void</span>* <span style="color: #fcaf3e;">vptr</span> = msg.data();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">As above but type cast</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">int</span>* <span style="color: #fcaf3e;">iptr</span> = msg.data&lt;<span style="color: #8cc4ff;">int</span>&gt;();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">With a copy into a non-const collection</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span> <span style="color: #fce94f;">ints</span>(msg.data&lt;<span style="color: #8cc4ff;">int</span>&gt;(), msg.size()/<span style="color: #b4fa70;">sizeof</span>(<span style="color: #8cc4ff;">int</span>));
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">If the data makes sense as a string.</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">string</span> <span style="color: #fcaf3e;">str</span> = msg.to_string();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">And we can get a zero copy view.</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">string_view</span> <span style="color: #fcaf3e;">strv</span> = msg.to_string_view();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">An artistic string representation of the contents.</span>
+<span style="color: #e9b2e3;">std</span>::cout &lt;&lt; msg.str() &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org8e4af90" class="outline-3">
+<h3 id="message-metadata">Message metadata</h3>
+<div class="outline-text-3" id="text-message-metadata">
+<p>
+Here we have a few details that are specific to certain socket types.  We still haven't gotten to sockets, but they are coming.  You may feel comfortable to skip this section for now.
+</p>
+</div>
+
+<div id="outline-container-orgd1d2fd6" class="outline-4">
+<h4 id="orgd1d2fd6">SERVER Routing ID</h4>
+<div class="outline-text-4" id="text-orgd1d2fd6">
+<p>
+When we receive and send messages via a socket of type <b>SERVER</b> our application must manage a "routing ID" in order to associate the messages with a remote <b>CLIENT</b> socket.  We do this by getting and setting this ID from/on the message as:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">After we receive a message, remember its routing ID:</span>
+<span style="color: #8cc4ff;">uint32_t</span> <span style="color: #fcaf3e;">rid</span> = msg.routing_id();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Later, just before sending, we make sure to set the ID:</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg2</span>;
+msg2.set_routing_id(rid);
+</pre>
+</div>
+
+<p>
+In this example, two messages are used.  If the received message is reused for the subsequent send, and we have not rebuilt it, the routing ID is retained and no explicit get/set is required.  
+</p>
+</div>
+</div>
+
+<div id="outline-container-org57bac52" class="outline-4">
+<h4 id="org57bac52">Broadcast Groups</h4>
+<div class="outline-text-4" id="text-org57bac52">
+<p>
+The <b>RADIO/DISH</b> sockets have a concept similar to <b>SERVER/CLIENT</b> routing ID and <b>PUB/SUB</b> <i>topics</i> which is that of a named <i>group</i> to which messages are associated.  This group name may be set on and retrieved from the message.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">16 byte max including null '\0' terminator char</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">char</span>* <span style="color: #fcaf3e;">grp</span> = <span style="color: #e9b96e;">"hello world!"</span>;
+msg.set_group(grp);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Get the group name.</span>
+grp = msg.group();
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7258d7a" class="outline-4">
+<h4 id="org7258d7a">Metadata Properties</h4>
+<div class="outline-text-4" id="text-org7258d7a">
+<p>
+More generally, messages may carry per-connection metadata "properties".  The key and values for these are of string.  We'll describe how these may be set through <a href="#sockets">socket options</a> later but for now here is an example of how properties may be retrieved.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Get system property </span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">char</span>* <span style="color: #fcaf3e;">stype</span> = msg.gets(<span style="color: #e9b96e;">"Socket-Type"</span>);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Get an application property</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">char</span>* <span style="color: #fcaf3e;">color</span> = msg.gets(<span style="color: #e9b96e;">"X-Favorite-Color"</span>);
+</pre>
+</div>
+
+<p>
+This <code>gets()</code> method wraps <a href="http://api.zeromq.org/master:zmq_msg_gets"><code>zmq_msg_gets(3)</code></a> so see that man page for details.
+</p>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgec55aa1" class="outline-2">
+<h2 id="buffers">Buffers</h2>
+<div class="outline-text-2" id="text-buffers">
+<p>
+In <b>cppzmq</b>, a buffer is like a message, but different.  It allows us another way to transmit data without creating a message or to gives us easier ways to create a message from our data.
+</p>
+</div>
+
+<div id="outline-container-org07fac88" class="outline-3">
+<h3 id="org07fac88">Buffer types</h3>
+<div class="outline-text-3" id="text-org07fac88">
+<p>
+There are two variants of buffers, <code>mutable_buffer</code> and <code>const_buffer</code>.  As the name suggests, the data given to the first may be modified while the data given to the second may not be.  
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7a28221" class="outline-3">
+<h3 id="org7a28221">Buffer construction</h3>
+<div class="outline-text-3" id="text-org7a28221">
+<p>
+Either type of buffer may be constructed directly as in this example:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Empty </span>
+<span style="color: #8cc4ff;">mutable_buffer</span> <span style="color: #fce94f;">mbuf</span>();
+<span style="color: #8cc4ff;">const_buffer</span> <span style="color: #fce94f;">cbuf</span>();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Fodder data</span>
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">size</span> = 1024;
+<span style="color: #8cc4ff;">void</span>* <span style="color: #fcaf3e;">ptr</span> = malloc(size);
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">void</span>* <span style="color: #fcaf3e;">cptr</span> = ptr;
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">With data</span>
+<span style="color: #8cc4ff;">mutable_buffer</span> <span style="color: #fce94f;">mbuf</span>(ptr, size);
+<span style="color: #8cc4ff;">const_buffer</span> <span style="color: #fce94f;">cbuf</span>(cptr, size);
+
+</pre>
+</div>
+
+<p>
+We are also given a variety of functions named <code>buffer()</code> to construct buffers in useful ways.  We give some examples next and will see later some examples of how to buffers in the sections <a href="#sockets">Socket</a> and <a href="#multipart">Multipart</a>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Fodder data from previous example</span>
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Basic construction</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">mutable_buffer</span> <span style="color: #fcaf3e;">mbuf</span> = <span style="color: #e9b2e3;">zmq</span>::buffer(ptr, size);
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">const_buffer</span> <span style="color: #fcaf3e;">cbuf</span> = <span style="color: #e9b2e3;">zmq</span>::buffer(cptr, size);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">C array. </span>
+<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">data</span>[1024];
+mbuf = <span style="color: #e9b2e3;">zmq</span>::buffer(data);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">C++ vector, std::array is similar</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #8cc4ff;">int</span>&gt; <span style="color: #fce94f;">data</span>(size);
+mbuf = <span style="color: #e9b2e3;">zmq</span>::buffer(data);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">C++ string and string literal</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">string</span> <span style="color: #fcaf3e;">str</span> = <span style="color: #e9b96e;">"hello world"</span>;
+mbuf = <span style="color: #e9b2e3;">zmq</span>::buffer(str);
+cbuf = <span style="color: #e9b2e3;">zmq</span>::str_buffer(<span style="color: #e9b96e;">"hello world"</span>);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7c2c640" class="outline-3">
+<h3 id="org7c2c640">Buffer operations</h3>
+<div class="outline-text-3" id="text-org7c2c640">
+<p>
+Once constructed, buffers are rather simple but we can operate on them to narrow their view of the underlying data.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Truncate tail half, same works with const_buffer</span>
+mbuf = <span style="color: #e9b2e3;">zmq</span>::buffer(mbuf, mbuf.size()/2);
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Truncate front half, etc cbuf.</span>
+mbuf += mbuf.size()/2;
+</pre>
+</div>
+
+<p>
+Why do this?  One very useful pattern is for an application to take some action based on the prefix or postfix of a message.  This narrowing can be performed after this information is used and the remainder can be forwarded to an output socket.  No copying needed.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd674b38" class="outline-3">
+<h3 id="orgd674b38">Access buffer data</h3>
+<div class="outline-text-3" id="text-orgd674b38">
+<p>
+Unlike a message, a buffer has only a basic pair of methods to get back the original data and its size, reflecting any narrowing that occurred.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">void</span> *<span style="color: #fcaf3e;">vptr</span> = mbuf.data();
+<span style="color: #8cc4ff;">size_t</span> <span style="color: #fcaf3e;">size</span> = mbuf.size();
+</pre>
+</div>
+
+<p>
+And, that's about it.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org6bbb756" class="outline-2">
+<h2 id="context">Context</h2>
+<div class="outline-text-2" id="text-context">
+<p>
+The <code>context_t</code> from <code>zmq.hpp</code> embodies an opaque <b>libzmq</b> context such as created by <a href="http://api.zeromq.org/master:zmq_ctx_new"><code>zmq_ctx_new(3)</code></a>.  A context is used by ZeroMQ to collect and manage set of sockets which the application creates on/in the context.  The context is thread safe (unlike some sockets) and may be shared between threads without concern for locking at the application level.  
+</p>
+</div>
+
+<div id="outline-container-orgcb1400a" class="outline-3">
+<h3 id="create-context">Creating a context</h3>
+<div class="outline-text-3" id="text-create-context">
+<p>
+Almost always we create the default context:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">context_t</span> <span style="color: #fcaf3e;">ctx</span>;
+</pre>
+</div>
+
+<p>
+A move constructor is also available.  After construction, various context options may be set and queried and <b>cppzmq</b> provides <code>ctx.set()</code> and <code>ctx.get()</code> to do this.  I have yet to use them but we may chack <a href="http://api.zeromq.org/master:zmq_ctx_set"><code>zmq_ctx_set(3)</code></a> for anything interesting.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf69e681" class="outline-3">
+<h3 id="context-life">Context life cycle</h3>
+<div class="outline-text-3" id="text-context-life">
+<p>
+We can not copy a context.  We can move it but typically we will construct it, keep it alive as long as we need the sockets we create with it and if needed pass it by reference.  Here is a contrived example.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">run_app</span>(<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">context_t</span>&amp; <span style="color: #fcaf3e;">ctx</span>);
+
+<span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">main</span>()
+{
+    <span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">context_t</span> <span style="color: #fcaf3e;">ctx</span>;
+    run_app(ctx);
+}
+</pre>
+</div>
+
+<p>
+In most applications, we will let the <code>context_t</code> destruct and that will tear down our sockets.  If we must do that sooner than destruction, we may:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Cease any blocking operations in progress.</span>
+ctx.shutdown();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Do a shutdown, if needed and destroy the context.</span>
+ctx.close();
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org64d5809" class="outline-2">
+<h2 id="sockets">Socket</h2>
+<div class="outline-text-2" id="text-sockets">
+<p>
+The heart of ZeroMQ is the socket and for it <b>cppzmq</b> supplies us with the class <code>socket_t</code>.  There exists too much useful information on the intriguing variety of ZeroMQ sockets to repeat here.  A concise and definitive source is <a href="http://api.zeromq.org/master:zmq_socket"><code>zmq_socket( 3)</code></a>.  Really, read that carefully as it answers a large fraction of questions I have had and see asked by others.
+</p>
+</div>
+
+<div id="outline-container-org275e8b0" class="outline-3">
+<h3 id="socket-life">Socket life cycle</h3>
+<div class="outline-text-3" id="text-socket-life">
+<p>
+To be useful, sockets must be created with a <b>context</b> (which we covered in section <a href="#context">Context</a>) and a socket type identifier.  In <b>libzmq</b> the type is identified with an integer, usually as provided by a CPP macro like <code>ZMQ_PUB</code>.  In <b>cppzmq</b> (in C++11) we may still use these macros or integers or we may use an <code>enum class socket_type</code>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #b4fa70;">using</span> <span style="color: #b4fa70;">namespace</span> <span style="color: #e9b2e3;">zmq</span>;
+<span style="color: #8cc4ff;">context_t</span> <span style="color: #fcaf3e;">ctx</span>;
+<span style="color: #8cc4ff;">socket_t</span> <span style="color: #fce94f;">pub</span>(ctx, ZMQ_PUB);
+<span style="color: #8cc4ff;">socket_t</span> <span style="color: #fce94f;">sub</span>(ctx, <span style="color: #e9b2e3;">socket_type</span>::sub);
+</pre>
+</div>
+
+<p>
+An "empty" socket may be constructed and later receive the contents of another through a move assignment.  A socket may also be move-constructed.  But we can not copy a socket and depending on the type may not use it from multiple threads (with some caveats) so we will usually construct it right where it is needed.
+</p>
+
+<p>
+When a socket destructs or if its <code>socket_t::close()</code> method is explicitly called, the underlying <b>libzmq</b> socket will be destroyed via <a href="http://api.zeromq.org/master:zmq_close"><code>zmq_close(3)</code></a>.  
+</p>
+</div>
+</div>
+
+<div id="outline-container-org5ad6708" class="outline-3">
+<h3 id="socket-link">Socket linkage</h3>
+<div class="outline-text-3" id="text-socket-link">
+<p>
+ZeroMQ sockets link up with each other via transport addresses (see eg <a href="http://api.zeromq.org/master:zmq_tcp"><code>zmq_tcp(7)</code></a>, <a href="http://api.zeromq.org/master:zmq_ipc"><code>zmq_ipc(7)</code></a>, <a href="http://api.zeromq.org/master:zmq_inproc"><code>zmq_inproc(7)</code></a>).  One or more sockets may "bind" to an address and one or more may "connect".  At least one of each type of link must be made for messages to be exchanged.  Other rules apply such as only certain socket types may intercommunicate and some socket types do not work with some transports.  These rules are all general to <b>libzmq</b>.  It's up to us to write applications that follow these rules while <b>cppzmq</b> provides us very simple ways to form the links.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #b4fa70;">const</span> <span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">string</span> <span style="color: #fcaf3e;">addr</span> = <span style="color: #e9b96e;">"tcp://127.0.0.1:5678"</span>;
+sock1.bind(addr);
+sock2.connect(addr);
+</pre>
+</div>
+
+<p>
+Note the lack of return values.  A <code>zmq::error_t</code> will be thrown if something goes wrong.  The linkage may be kept for the entire life cycle of the sockets but some applications may want to explicitly undo these actions:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++">sock1.unbind(addr);
+sock2.disconnect(addr);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc1829cc" class="outline-3">
+<h3 id="orgc1829cc">Sending</h3>
+<div class="outline-text-3" id="text-orgc1829cc">
+<p>
+We have several ways to send with <b>cppzmq</b> although several are deprecated.  Here, let's only focus on the preferred methods.  The choice is to pass a <code>message_t</code> by reference or by move or to pass a <code>const_buffer</code>.  In all cases we must also provide "send flags". 
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span> = <span style="color: #fce94f;">...</span>;
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Pass by reference</span>
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.send(msg, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::none);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Pass by move</span>
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.send(<span style="color: #e9b2e3;">std</span>::move(msg), <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::none);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Pass by buffer</span>
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.send(<span style="color: #e9b2e3;">zmq</span>::str_buffer(<span style="color: #e9b96e;">"hello world"</span>), <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::none);
+</pre>
+</div>
+
+<p>
+The first two call <a href="http://api.zeromq.org/master:zmq_msg_send"><code>zmq_msg_send(3)</code></a> and the last calls <a href="http://api.zeromq.org/master:msg_send"><code>msg_send(3)</code></a> so see those man pages for any nitty gritty details.
+</p>
+</div>
+
+<div id="outline-container-orgce81953" class="outline-4">
+<h4 id="orgce81953">Send flags</h4>
+<div class="outline-text-4" id="text-orgce81953">
+<p>
+ZeroMQ accepts a few "hints" on how it is to treat a message when sending.  In <b>cppzmq</b> we may provide these with the <code>enum class</code> called <code>zmq::send_flags</code>.  It is rare that I use anything other than <code>zmq::send_flags::none</code>, as shown in the example, but two more are available:
+</p>
+
+<dl class="org-dl">
+<dt><code>dontwait</code></dt><dd>instead of blocking, return immediately with error <b>EAGAIN</b></dd>
+<dt><code>sndmore</code></dt><dd>the message is to be sent together with a following message</dd>
+</dl>
+
+<p>
+Details of the applicability and meaning of these flags are found in <a href="http://api.zeromq.org/master:zmq_msg_send"><code>zmq_msg_send(3)</code></a>.  
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf8bb70f" class="outline-4">
+<h4 id="orgf8bb70f">Send results</h4>
+<div class="outline-text-4" id="text-orgf8bb70f">
+<p>
+That <code>auto res</code> holding the return of a <code>send()</code> in the example above is a <code>zmq::send_result_t</code> and that is a <code>std::optional</code> which may hold a <code>size_t</code> giving the number of bytes sent or nothing if <b>EAGAIN</b> error occurred and that only happens with a <code>dontwait</code> flag (see above).
+</p>
+
+<p>
+Regardless of the send flag used we <b>must</b> catch the send result because the <code>send()</code> methods are compiled marked with the C++ attribute <code>[[nodiscard]]</code>.  We can be lazy and then do nothing with the <code>res</code> variable, but we should be more rigorous and compile with <code>-Wunused</code> (maybe via <code>-Wall</code>) so we can be told when we fail to use the <code>res</code> send result.  Let's be even better and compile with <code>-Werror</code> to force us to do something with it.
+</p>
+
+<p>
+Regardless of what send flag we use, any other error that occurs will lead to a throw of the <code>zmq::error_t</code> exception so we do not require special compiler flags to be sure all other errors can not go silently unchecked.
+</p>
+
+<p>
+One last comment.  In most cases we will use <code>none</code>.  The API would be friendlier to us if <code>none</code> was set as a default.  However, that simpler call signature was already taken by other (now deprecated) versions of <code>send()</code>.  Maybe in a future release, at the cost of a breaking change, this friendliness can be added.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org039a79b" class="outline-4">
+<h4 id="org039a79b">Send polling</h4>
+<div class="outline-text-4" id="text-org039a79b">
+<p>
+At times our application may send messages faster than downstream applications can receive.  Eventually, our socket's internal buffer will reach its "high water mark" (HWM) and enter what is called the "mute" state.  What happens next depends on the socket types used and is explained in nice detail in <a href="http://api.zeromq.org/master:zmq_socket"><code>zmq_socket(3)</code></a>.  We may elect to let that built-in behavior handle the issue or we may develop our application to be more proactive.  We can learn if the next message will tip our socket into "mute" step by polling it prior to output (pollout).  Polling is described more in the section <a href="#poller">Poller</a>.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org80cbb24" class="outline-3">
+<h3 id="org80cbb24">Receiving</h3>
+<div class="outline-text-3" id="text-org80cbb24">
+<p>
+The opposite to sending to a socket is receiving from a socket.  We may do this with <code>recv()</code>.  The misspelling of this verb has a long history in network programming and ZeroMQ and <b>cppzmq</b> cheerfully continues it.  Like with <code>send()</code>.  we have a variety of <code>recv()</code> methods to choose from and some are deprecated and we stick to the few which are preferred.  We also may use a <code>message_t</code> or a <code>mutable_buffer</code> for the data and we must provide "send flags".
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Fill a message passed by reference</span>
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.send(msg, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">recv_flags</span>::none);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Fill a suitably pre-sized mutable_buffer</span>
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.send(buf, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">recv_flags</span>::none);
+</pre>
+</div>
+
+<p>
+These two examples correspond to the low-level <a href="http://api.zeromq.org/master:zmq_msg_recv"><code>zmq_msg_recv(3)</code></a> and <a href="http://api.zeromq.org/master:zmq_recv"><code>zmq_recv(3)</code></a> respectively.  When using the buffer to receive the data, take care that it has sufficient capacity to hold the expected message.  The care you take pays back in avoiding a copy.
+</p>
+</div>
+
+<div id="outline-container-org811b8f9" class="outline-4">
+<h4 id="org811b8f9">Receive flags</h4>
+<div class="outline-text-4" id="text-org811b8f9">
+<p>
+Like <code>send()</code>, <code>recv()</code> takes flags but with this method we may often want to specify a flag besides <code>none</code>.  There is however only one choice:
+</p>
+
+<dl class="org-dl">
+<dt><code>dontwait</code></dt><dd>instead of blocking, return immediately with error <b>EAGAIN</b></dd>
+</dl>
+
+<p>
+This flag can be useful if our application wants to do a "quick check" to see if a message is waiting, and to receive it.  If no message is sitting in the socket's input queue, the <code>recv()</code> will return immediately.  If we use <code>none</code> then <code>recv()</code> may, in principle, wait until the end of the universe.  
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf633e74" class="outline-4">
+<h4 id="orgf633e74">Receive results</h4>
+<div class="outline-text-4" id="text-orgf633e74">
+<p>
+Also like <code>send()</code>, our <code>recv()</code> returns a <code>std::optional</code> result which is empty if <b>EAGAIN</b> was returned by <b>libzmq</b>.  Otherwise it returns the number of bytes received.   And likewise, this return value also must be saved to a variable.  The same comments about the importance to check this value as describe in the <a href="#orgf8bb70f">Send results</a> section apply here.  
+</p>
+
+<p>
+When using a message to receive, a non-empty receive result will hold the size in bytes of the message.  
+</p>
+
+<p>
+When using a buffer to receive, it is extra important to check the receive result.  If non-empty it holds a <code>zmq::recv_buffer_size</code> which is a little <code>struct</code> holding two size attributes.  The <code>size</code> says how much data we received and the <code>untruncated_size</code> tells us how much data ZeroMQ wanted to give us.  If the two values differ we know our application failed to provide a large enough buffer.  Oops.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc03478e" class="outline-4">
+<h4 id="orgc03478e">Receive polling</h4>
+<div class="outline-text-4" id="text-orgc03478e">
+<p>
+Depending on the receive flags we can either assure an immediate return from <code>recv()</code> or we may risk it never returning.  That's a tough dichotomy to live with.  Thankfully we can assure that the call waits at most some time in between using receive polling.  This is discussed more below in the section <a href="#poller">Poller</a>.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7e5f763" class="outline-3">
+<h3 id="org7e5f763">Socket options</h3>
+<div class="outline-text-3" id="text-org7e5f763">
+<p>
+Usually we develop an application that makes some ZeroMQ sockets, do our <code>bind()/connect()</code> and some <code>send()/recv()</code> and that's all we need for a lot of fun.  There's not much detail to worry about.  Sometimes we have a tough problem that needs something special and there's very likely a way that past ZeroMQ community have found a solution.  For us, we just need to find and set the right socket options.
+</p>
+
+<p>
+The rather long list of possible options (85 counted today) are given in <a href="http://api.zeromq.org/master:zmq_setsockopt"><code>zmq_setsockopt(3)</code></a>.  Their, they have names like <code>ZMQ_IMMEDIATE</code> or <code>ZMQ_ROUTING_ID</code> which are CPP macros expanding to some integer.  For each, <b>cppzmq</b> creates a type tag to use with friendly <code>get()/set()</code> methods on <code>socket_t</code>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++">sock.set(<span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">sockopt</span>::immediate, <span style="color: #e9b2e3;">false</span>);
+sock.set(<span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">sockopt</span>::routing_id, <span style="color: #e9b96e;">"me"</span>);
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">rid</span> = sock.get(<span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">sockopt</span>::routing_id);
+</pre>
+</div>
+
+<p>
+We will still need to carefully read <code>zmq_setsockopt</code> to discover and understand what options may help us, but then applying or querying them with a <b>cppzmq</b> socket is simple.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org17fdad8" class="outline-3">
+<h3 id="org17fdad8">Socket properties</h3>
+<div class="outline-text-3" id="text-org17fdad8">
+<p>
+One special socket option lets us set socket properties.  These can be retrieved from messages that pass through the socket as described above in <a href="#message-metadata">Message metadata</a>.   
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++">sock.set(<span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">sockopt</span>::metadata, <span style="color: #e9b2e3;">zmq</span>::str_buffer(<span style="color: #e9b96e;">"X-color:purple"</span>);
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.recv(msg, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">recv_flags</span>::none);
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">string</span> <span style="color: #fcaf3e;">val</span> = msg.gets(<span style="color: #e9b96e;">"X-color"</span>);
+assert(val == <span style="color: #e9b96e;">"purple"</span>);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org622e461" class="outline-3">
+<h3 id="org622e461">Socket references</h3>
+<div class="outline-text-3" id="text-org622e461">
+<p>
+Sockets in <b>cppzmq</b> can not be copied (but can be moved).  I can't think what it even means to copy a socket.  But, what we sometimes do want is different parts of our application code to share access to the same socket.  We are given <code>zmq::socket_ref</code> which refers to but does not own a socket.  With a socket ref our code can do almost everything it would do with a full socket object and it can know if the underlying socket has been closed.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">socket_t</span> <span style="color: #fce94f;">sock</span>(ctx, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">socket_type</span>::pub);
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">socket_ref</span> <span style="color: #fcaf3e;">sref</span> = sock;
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">pass ref by value (copy)</span>
+do_some_socket_stuff(sref);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Check if our socket is still there</span>
+<span style="color: #b4fa70;">if</span> (sref == <span style="color: #e9b2e3;">nullptr</span>) {
+    respond_to_closure();
+}
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Do stuff with collections of socket refs</span>
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">unordered_set</span>&lt;<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">socket_ref</span>&gt; <span style="color: #fcaf3e;">bag_of_socks</span>;
+bag_of_socks.insert(sref);
+<span style="color: #b4fa70;">for</span> (<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">s</span> : bag_of_socks) {
+    <span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = s.send(bcast, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::none);
+}
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org765cb3d" class="outline-3">
+<h3 id="org765cb3d">Socket handle</h3>
+<div class="outline-text-3" id="text-org765cb3d">
+<p>
+Our nice <b>cppzmq</b> socket is just a facade over an opaque socket object from <b>libzmq</b>.  Rarely do we care about that but there may be cases where we do.  For example, if we want to directly call some <b>libzmq</b> function or maybe inter-operate with CZMQ code, we can do so by getting the underlying <b>libzmq</b> socket.  In <code>zmq::socket_t</code> this can be done like:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">void</span>* <span style="color: #fcaf3e;">libzmq_socket</span> = sock.handle();
+<span style="color: #73d216;">// </span><span style="color: #73d216;">use libzmq to bind (we would probably never do this)</span>
+<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">port</span> = zmq_bind(libzmq_socket, <span style="color: #e9b96e;">"tcp://*:*"</span>);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">use CZMQ a socket (we just might one day do this)</span>
+<span style="color: #8cc4ff;">zsock_t</span> <span style="color: #fcaf3e;">czmq_socket</span> = zsock_new_pub(<span style="color: #e9b96e;">"tcp://*:*"</span>);
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">socket_ref</span> <span style="color: #fce94f;">sock</span>(<span style="color: #e9b2e3;">zmq</span>::from_handle, <span style="color: #8cc4ff;">zsock_resolve</span>(<span style="color: #fcaf3e;">czmq_socket</span>));
+</pre>
+</div>
+
+<p>
+Most of the time, let's just ignore we have a "handle" on the <b>libzmq</b> socket and rest assured that if we ever need it, it will be there.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org26bde72" class="outline-2">
+<h2 id="monitor">Monitor</h2>
+<div class="outline-text-2" id="text-monitor">
+<p>
+ZeroMQ gives us great power and all it asks is that we stay out of its way.  To nag ZeroMQ asking tell us every detail about its internal operation is also to slow it down and impede its job.  We strive then to relax and use ZeroMQ sockets as they are intended, a sink or a source of messages to and from the cosmos.
+</p>
+
+<p>
+However, and zen platitudes aside, sometimes we must get uptight and worry about what our trusty ZeroMQ friend is busy doing.  For that we have a socket monitor, spelled <code>zmq::monitor_t</code> by <b>cppzmq</b>.  
+</p>
+
+<p>
+The way for our application to make use of a <code>monitor_t</code> is to subclass it and implement some of the many <code>monitor_t:on_event_*()</code> virtual methods.  Each such method corresponds to one of the event types listed in <a href="http://api.zeromq.org/master:zmq_socket_monitor"><code>zmq_socket_monitor(3)</code></a>.  We may also limit the events that our monitor reacts to by giving it a list of events as a bitmap.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #b4fa70;">class</span> <span style="color: #8cc4ff;">connect_monitor_t</span> : <span style="color: #b4fa70;">public</span> <span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">monitor_t</span> {
+<span style="color: #b4fa70;">public</span>:
+    <span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">on_event_connected</span>(<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">zmq_event_t</span>&amp; <span style="color: #fcaf3e;">event</span>,
+                            <span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">char</span>* <span style="color: #fcaf3e;">addr</span>) <span style="color: #b4fa70;">override</span>
+    {
+        <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"got connection from "</span> &lt;&lt; addr &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+    }    
+};
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">elsewhere</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">socket_t</span> <span style="color: #fcaf3e;">sock</span> = <span style="color: #fce94f;">...</span>;
+<span style="color: #b4fa70;">const</span> <span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">events</span> = ZMQ_EVENT_CONNECTED;
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Monitor sock using the given transport for internal communication</span>
+<span style="color: #8cc4ff;">connect_monitor_t</span> <span style="color: #fcaf3e;">mon</span>(sock, <span style="color: #e9b96e;">"inproc://conmon"</span>, events);
+<span style="color: #73d216;">// </span><span style="color: #73d216;">mon runs forever</span>
+
+<span style="color: #8cc4ff;">connect_monitor_t</span> <span style="color: #fcaf3e;">mon2</span>;
+<span style="color: #73d216;">// </span><span style="color: #73d216;">here, default is ZMQ_EVENT_ALL</span>
+mon2.init(sock, <span style="color: #e9b96e;">"inproc://conmon2"</span>);
+<span style="color: #73d216;">// </span><span style="color: #73d216;">init returns and we poll when we want</span>
+<span style="color: #b4fa70;">if</span> (! mon2.check_event(100)) {
+    <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"timeout"</span> &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+}
+</pre>
+</div>
+
+<p>
+In this example, the construction of <code>mon</code> with arguments tells it to run forever.  This might make the rest of the code in our application jealous so better were we to put it running in its own thread.  For <code>mon2</code> we default construct and then after an explicit <code>init()</code> we may check for any activity with a timeout.  In this case we ask for all events but since our <code>connect_monitor_t</code> only implements one callback, all the other events just case silent no-op calls to the base class <code>on_event_*()</code> methods.
+</p>
+</div>
+
+<div id="outline-container-orgceb7f26" class="outline-3">
+<h3 id="orgceb7f26">No queue monitoring</h3>
+<div class="outline-text-3" id="text-orgceb7f26">
+<p>
+I have at times seen people asking how to monitor is the number of messages waiting in the input or output queue.  I've sometimes thought I absolutely needed this information myself.  However, this information is not available for monitoring.
+</p>
+
+<p>
+I have come to understand this choice is due to a few reasons.  First, to provide these values would require additional processing which would degrade the performance of ZeroMQ.  Second, is that by the time the application gets the answer the value has long gone stale, particularly in the case of high rate flow.  Third, there is not much use in an application knowing this information in the first place because if the socket is not in mute state then all is well, if it is in mute, the application can tell in ways described above and more next in section <a href="#poller">Poller</a>.  
+</p>
+
+<p>
+In understanding my own motives to ask for this and trying to understand others, I conclude the design choice is correct and the requests are really uncovering examples of the <a href="https://en.wikipedia.org/wiki/XY_problem">X-Y problem</a>.  There's really some problem and we think peaking under ZeroMQ's skirts will solve it, but the real problem may be something else and there are other solutions.
+</p>
+
+<p>
+But, if one tosses aside these words as absurd ramblings, then we may always bolt on application managed buffers.  We may then feed a <code>send()</code> and drain a <code>recv()</code> as fast as possible and monitor the <code>.size()</code> of our application buffers.  If there is concern that our count is wrong because of ZeroMQ HWM we may get its value or we may set it to 1.  If you follow this approach, please benchmark throughput, latency and memory usage with and without application buffers.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org45fdcb0" class="outline-2">
+<h2 id="poller">Poller</h2>
+<div class="outline-text-2" id="text-poller">
+<p>
+In several places above we have alluded to something called polling.  It was even used, if maybe not noticed, in the example in the <a href="#monitor">Monitor</a> section when we call <code>check_event(100)</code>.  This call takes at most 100 milliseconds to return.  If an event is waiting or arrives within that timeout, it will return even sooner.  Had we used a timeout of -1 the method will never return if no new monitored events were raised.
+</p>
+
+<p>
+This act of waiting for an event with a finite or infinite timeout is generally termed polling.  Most often, as with <code>check_event()</code> we poll for the event that a message is ready to <code>recv()</code>.  This is called <b>pollin</b> ("poll in") or in <b>libzmq</b> spelling <code>ZMQ_POLLIN</code>.  Less common, but important for robust applications is to poll on the ability to send.  This is called <b>pollout</b> or <code>ZMQ_POLLOUT</code>.
+</p>
+
+<p>
+A "poller" then helps application code to respond to a successful poll and to know that a poll timed out.  In <b>cppzmq</b> we have the <code>zmq::poller_t</code> in <code>zmq.hpp</code> and the <code>active_poller_t</code> from <code>zmq_addon.hpp</code>.  
+</p>
+</div>
+
+<div id="outline-container-orgae12878" class="outline-3">
+<h3 id="orgae12878">Simple poller</h3>
+<div class="outline-text-3" id="text-orgae12878">
+<p>
+In the following example, we construct two <code>poller_t</code> instances, one to poll on input and one to poll on output add some sockets and their associated events (pollin/pollout).  We then use the pollers to wait up to a timeout.  Depending on the return, our application reacts.  The reaction is a bit dodgy in the example, and would be more thoughtful in a real application.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">We could combine the pollers but here keep input and output polling</span>
+<span style="color: #73d216;">// </span><span style="color: #73d216;">separate.</span>
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">poller_t</span>&lt;&gt; <span style="color: #fcaf3e;">in_poller</span>, <span style="color: #fcaf3e;">out_poller</span>;
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Our application has two input sockets and one output.</span>
+in_poller.add(input_socket1, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">event_flags</span>::pollout);
+in_poller.add(input_socket2, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">event_flags</span>::pollout);
+out_poller.add(output_socket, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">event_flags</span>::pollout);
+
+<span style="color: #b4fa70;">const</span> <span style="color: #e9b2e3;">std</span>::<span style="color: #e9b2e3;">chrono</span>::<span style="color: #8cc4ff;">milliseconds</span> <span style="color: #fcaf3e;">timeout</span>{100};
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #e9b2e3;">zio</span>::<span style="color: #8cc4ff;">poller_event</span>&lt;&gt;&gt; <span style="color: #fcaf3e;">in_events</span>(2);
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #e9b2e3;">zio</span>::<span style="color: #8cc4ff;">poller_event</span>&lt;&gt;&gt; <span style="color: #fcaf3e;">out_events</span>(1);
+<span style="color: #b4fa70;">while</span> (<span style="color: #e9b2e3;">true</span>) {
+    <span style="color: #b4fa70;">const</span> <span style="color: #b4fa70;">auto</span> nin = in_poller.wait_all(in_events, timeout);
+    <span style="color: #b4fa70;">if</span> (!nin) {
+        <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"input timeout, try again"</span> &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+        <span style="color: #b4fa70;">continue</span>;
+    }
+    <span style="color: #b4fa70;">for</span> (<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">ind</span>=0; ind&lt;nin; ++ind) {
+        <span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span>;
+        <span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">rres</span> = in_events[ind].socket.recv(msg, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">recv_flags</span>::none);
+
+        <span style="color: #b4fa70;">const</span> <span style="color: #b4fa70;">auto</span> nout = out_poller.wait_all(out_events, timeout);
+        <span style="color: #b4fa70;">if</span> (!nout) {
+            <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"output timeout, freakout"</span> &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+            abort();
+        }
+        <span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">sres</span> = out_events[0].socket.send(msg, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::none);
+    }
+} 
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgadbdfec" class="outline-4">
+<h4 id="orgadbdfec">Poller data</h4>
+<div class="outline-text-4" id="text-orgadbdfec">
+<p>
+In the example above you notice the <code>poller_t&lt;&gt;</code> declaration.  That empty template argument list sure is curious.  It may be associate some user data to a socket event being polled.  This user data is added along with the socket and event and is then made available in any event resulting from a poll.  Here is an example where the user data is of type <code>int</code>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #b4fa70;">using</span> <span style="color: #8cc4ff;">mypoller_t</span> = <span style="color: #e9b2e3;">zmq</span>::poller_t <span style="color: #8cc4ff;">poller</span>&lt;<span style="color: #8cc4ff;">int</span>&gt;;
+<span style="color: #8cc4ff;">mypoller_t</span> <span style="color: #fcaf3e;">poller</span>;
+<span style="color: #8cc4ff;">int</span> <span style="color: #fcaf3e;">val</span> = 42;
+poller.add(sock, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">event_flags</span>::pollin, &amp;val);
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #8cc4ff;">mypoller_t</span>&gt; <span style="color: #fcaf3e;">events</span>(1);
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">n</span> = poller.wait_all(events, timeout);
+<span style="color: #b4fa70;">if</span> (n) {
+    assert(42 == *events[0].val);
+}
+</pre>
+</div>
+
+<p>
+Each socket/event registered with <code>.add()</code> can have its own user data but they must all of the same (pointer to) type.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf1d7978" class="outline-3">
+<h3 id="orgf1d7978">Active poller</h3>
+<div class="outline-text-3" id="text-orgf1d7978">
+<p>
+So far this tour has taken us through just <code>zmq.hpp</code> and here in the middle of this section we move to <code>zmq_addon.hpp</code>.  The distinction here is somewhat arbitrary.  Parts of <code>zmq_addon.hpp</code> are more "core" for my own use while parts of <code>zmq.hpp</code> are not so "core" to me.  So, let us not worry that we now switch our focus to a header that on the surface may sound somehow secondary.
+</p>
+
+<p>
+The <code>active_poller_t</code> is created and filled with sockets in a similar manner as <code>poller_t</code>.  In fact it uses a <code>poller_t</code> under the hood.  However, its <code>add()</code> method takes a third argument which is a <code>std::function&lt;void(event_flags)&gt;</code> that will be called back with that socket's event is seen.  
+</p>
+
+<p>
+This allows our application the option of structuring its response to events differently.  Instead of complexity held inside the loop, it can be placed in functions or lambdas.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">void</span> <span style="color: #fce94f;">chirp</span>(<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">event_flags</span> <span style="color: #fcaf3e;">ef</span>);
+<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">active_poller_t</span> <span style="color: #fcaf3e;">ap</span>;
+ap.add(sock1, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">event_flags</span>::pollin, [](<span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">event_flags</span> <span style="color: #fcaf3e;">ef</span>) {
+  <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"sock1 got "</span> &lt;&lt; ef &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+});
+ap.add(sock2, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">event_flags</span>::pollin, chirp);
+
+<span style="color: #b4fa70;">while</span> (<span style="color: #e9b2e3;">true</span>) {
+    <span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">n</span> = ap.wait(timeout);
+    <span style="color: #b4fa70;">if</span> (n) {
+        <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"got "</span> &lt;&lt; n &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;        
+    }
+    <span style="color: #b4fa70;">else</span> {
+        <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"timeout"</span> &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+    }
+}
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbd86b72" class="outline-2">
+<h2 id="multipart">Multipart</h2>
+<div class="outline-text-2" id="text-multipart">
+<p>
+In the various ZeroMQ literature there is often a lot of confusion about <i>multipart messages</i>.  In some places it talks about the same object as being a message or a message part.  Language is fluid and as long as we know what it meant, that's fine.  But, I for one took a long time to figure out what was meant.
+</p>
+
+<p>
+In <b>cppzmq</b> terms and objects are made a bit more clear.  Previously in this tour, we described a <code>message_t</code> as being of a <i>single part</i> because it held data in a single contiguous block of memory.  We will stick to that but dip into the confusion that is <i>multipart</i> or what I think it more clear to say <i>multiple single part messages</i>.  We then will describe the <code>multipart_t</code> object of <b>cppzmq</b> which allows one to aggregate multiple single part <code>message_t</code> in useful ways. 
+</p>
+</div>
+
+<div id="outline-container-orgeef9f5d" class="outline-3">
+<h3 id="orgeef9f5d">Multiple messages</h3>
+<div class="outline-text-3" id="text-orgeef9f5d">
+<p>
+ZeroMQ has the concept of "more".  We send a (single part) message but we tell the socket, "you know what, next I'm gonna send you another message and I want you to wait until I do that and then transmit both together".  That's "more".  This is done with <b>cppzmq</b> like:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg1</span>, <span style="color: #fcaf3e;">msg2</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.send(msg1, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::sndmore);
+res = sock.send(msg2, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">send_flags</span>::none);
+</pre>
+</div>
+
+<p>
+This chain can of course go on for more than just two messages.  As it does, ZeroMQ is collecting these messages behind the scenes just waiting for that final <code>none</code>.  When it comes it races to do some magic to assure every message is delivered to all linked sockets or none of them are.
+</p>
+
+<p>
+On the other end we must write our application to expect this chain of separate but together messages.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">zmq</span>::<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg1</span>, <span style="color: #fcaf3e;">msg2</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.recv(msg1, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">recv_flags</span>::none);
+<span style="color: #b4fa70;">if</span> (!msg1.more()) {
+    <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"Oh dear, sheeps are going astray\n"</span>;
+}
+<span style="color: #b4fa70;">else</span> {
+    <span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = sock.recv(msg2, <span style="color: #e9b2e3;">zmq</span>::<span style="color: #e9b2e3;">recv_flags</span>::none);
+}
+</pre>
+</div>
+
+<p>
+This ZeroMQ concept of "more" is kind of a micro protocol and kind of an optimization to allow truly large messages to be transmitted in a way that their ordering is assured regardless of how many peers may be attempting to otherwise multiplex their streams.  It can be needed but it can also be an unwanted complication.  ZeroMQ is still buffer these messages in memory and still transmitting them sequentially, so why not allow the application to do that packaging itself.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgdd58f90" class="outline-3">
+<h3 id="orgdd58f90">Multipart messages</h3>
+<div class="outline-text-3" id="text-orgdd58f90">
+<p>
+Enter <code>multipart_t</code>.  I hesitate to call this a "message" because it's really multiple messages which are aggregated into a collection (called <code>multipart_t</code>).  Behind the scenes a <code>multipart_t::send()</code> and <code>::recv()</code> are simply handling multiple single part <code>message_t</code> objects as above.  Later we will describe how this can be done without even forming a <code>multipart_t</code> using code is sort of like what buffers are to <code>message_t</code>.
+</p>
+
+<p>
+But first <code>multipart_t</code>, which we should think about as if it were an STL collection (and in fact it uses a <code>std::deque&lt;message_t&gt;</code> under the covers).  We can construct them in many ways.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">empty</span>;
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fce94f;">first_from_recv</span>(sock);
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #8cc4ff;">int</span>&gt; <span style="color: #fcaf3e;">data</span>(1024,0);
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fce94f;">first_from_data</span>(data.data(), data.size()*<span style="color: #b4fa70;">sizeof</span>(<span style="color: #8cc4ff;">int</span>));
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fce94f;">first_from_string</span>(<span style="color: #e9b2e3;">std</span>::string(<span style="color: #e9b96e;">"hello world"</span>));
+</pre>
+</div>
+
+<p>
+The latter constructors only fill in an initial element of the <code>multipart_t</code> container.  We can add more <code>message_t</code> elements
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span>;
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">mp</span>, <span style="color: #fcaf3e;">mp2</span>;
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Prefix and postfix concatenation. </span>
+mp.prepend(mp2);
+mp.append(mp2);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">push a part in various forms to front, also "add" variants to back.</span>
+mp.pushmem(data, size);
+mp.pushstr(<span style="color: #e9b96e;">"hello again"</span>);
+mp.pushtyp(myobject);           <span style="color: #73d216;">// </span><span style="color: #73d216;">effectively a memcpy</span>
+mp.push(msg);
+mp.push_back(msg);              <span style="color: #73d216;">// </span><span style="color: #73d216;">same as push, but STL spelling</span>
+</pre>
+</div>
+
+<p>
+We can also remove messages (parts)
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">from front</span>
+<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span> = mp.pop();
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">string</span> <span style="color: #fcaf3e;">s</span> = mp.popstr();
+<span style="color: #8cc4ff;">MyObject</span> <span style="color: #fcaf3e;">mo</span> = mp.pop&lt;<span style="color: #8cc4ff;">MyObject</span>&gt;();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">from back</span>
+<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span> = mp.remove();
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">all</span>
+mp.clear();
+</pre>
+</div>
+
+<p>
+We can query and iterate on the <code>multipart_t</code> in many ways:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">message_t</span>&amp; <span style="color: #fcaf3e;">first</span> = mp.front();
+<span style="color: #8cc4ff;">message_t</span>&amp; <span style="color: #fcaf3e;">last</span> = mp.back();
+<span style="color: #8cc4ff;">message_t</span>* <span style="color: #fcaf3e;">nth</span> = mp.peek(42);
+<span style="color: #e9b2e3;">std</span>::count &lt;&lt; mp.size() &lt;&lt; <span style="color: #e9b96e;">" parts:\n"</span>;
+<span style="color: #b4fa70;">for</span> (<span style="color: #b4fa70;">auto</span>&amp; <span style="color: #fcaf3e;">msg</span> : mp) {
+    <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; msg.size() &lt;&lt; <span style="color: #e9b96e;">" bytes:\n"</span> &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+    <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; msg.str() &lt;&lt; <span style="color: #e9b2e3;">std</span>::endl;
+}
+<span style="color: #b4fa70;">if</span> (mp.empty()) {
+    <span style="color: #e9b2e3;">std</span>::cout &lt;&lt; <span style="color: #e9b96e;">"no parts\n"</span>;
+}
+
+</pre>
+</div>
+
+<p>
+Finally, getting back to <i>multiple single part message</i> transmission we may do:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #73d216;">// </span><span style="color: #73d216;">Clear and receive one or MORE message_t from a socket</span>
+mp.recv(sock);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">Send the one or MORE message_t parts to a socket</span>
+mp.send(sock);
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org4f939a6" class="outline-4">
+<h4 id="org4f939a6">Multipart <code>send()</code> and <code>recv()</code> without <code>multipart_t</code></h4>
+<div class="outline-text-4" id="text-org4f939a6">
+<p>
+Building up a <code>multipart_t</code> just to send and receive its data can require unwanted code and memory copies.  If your application already has some collection of data, why should you go to this extra trouble?  The answer is, you may not need to.
+</p>
+
+<p>
+The templated <code>recv_multipart()</code> and <code>send_multipart()</code> free functions are provided.  They may be used with a <code>multipart_t</code> as a replacement for that classes <code>send()</code> and <code>recv()</code>.  But they may work with other collections holding <code>message_t</code> or buffers or other types.  First some receives.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #8cc4ff;">message_t</span>&gt; <span style="color: #fcaf3e;">msgs</span>;
+<span style="color: #8cc4ff;">aut</span> <span style="color: #fcaf3e;">res</span> = recv_multipart(sock, <span style="color: #e9b2e3;">std</span>::back_inserter(msgs));
+
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">mp</span>;
+<span style="color: #8cc4ff;">aut</span> <span style="color: #fcaf3e;">res</span> = recv_multipart(sock, <span style="color: #e9b2e3;">std</span>::back_inserter(mp));
+</pre>
+</div>
+
+<p>
+And some sends.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #e9b2e3;">zmq</span>::message_t&gt; <span style="color: #fcaf3e;">msgs</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = send_multipart(sock, msgs);
+
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;const_buffer&gt; <span style="color: #fcaf3e;">cbufs</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = send_multipart(sock, cbufs);
+
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;mutable_buffer&gt; <span style="color: #fcaf3e;">mbufs</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">res</span> = send_multipart(sock, mbufs);
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgca08016" class="outline-2">
+<h2 id="codec">Codec</h2>
+<div class="outline-text-2" id="text-codec">
+<p>
+The previous section shows how <b>cppzmq</b> can transmit a sequence of multiple single part messages in the "ZeroMQ" way.  CZMQ introduced another way to do this and that is to encode the sequence into a single message.  CZMQ calls a <code>message_t</code> a <code>zframe_t</code> and a <code>multipart_t</code> a <code>zmsg_t</code> but let's not let this confuse us.  We call the process of concatenation "encoding" and the reverse "decoding" and together they form a "codec".
+</p>
+</div>
+
+<div id="outline-container-org532278b" class="outline-3">
+<h3 id="org532278b">Why a codec</h3>
+<div class="outline-text-3" id="text-org532278b">
+<p>
+With the nice <code>multipart_t</code> class methods and free functions just described, why introduce this codec?  The reason is that the new thread-safe sockets such as the <b>SERVER/CLIENT</b> pair do not support the "more" algorithm.  They can only send (single part) messages.  If our application protocol requires transmitting an atomic sequence of messages we must do something to squish them into a single message.  A codec for this can be invented by any application but interoperability is increased if a common one is offered in the base <b>cppzmq</b>.
+</p>
+
+<p>
+The CZMQ / <b>cppzmq</b> codec is rather simple.  A number of messages are input to the encoding function and for each  message its size is emitted followed by the message data.  If the message is smaller than 255 bytes, the size value is stored in a single byte.  Otherwise a literal byte value of <code>0xFF</code> is emitted followed by the message size as a four byte value.  The decode works in reverse.  If the first byte is <code>0xFF</code> it knows the next four provide up the message size else the first byte provides the size.  The decoder then consumes a number of bytes as given by that size and fills a <code>message_t</code>.  This repeats until the byte stream is exhausted or a parse error is encountered.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org71a47e0" class="outline-3">
+<h3 id="org71a47e0">Using the codec</h3>
+<div class="outline-text-3" id="text-org71a47e0">
+<p>
+There are two ways to use the codec.  One may call methods on <code>multipart_t</code> or use free functions in analogy to how multipart <code>send()/recv()</code> was described above.  First, via <code>multipart_t</code> methods. 
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">mp</span>;
+
+<span style="color: #8cc4ff;">message_t</span> <span style="color: #fcaf3e;">msg</span> = mp.encode();
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">mp2</span>;
+<span style="color: #73d216;">// </span><span style="color: #73d216;">in place, decode+append</span>
+mp2.decode_append(msg);
+
+<span style="color: #73d216;">// </span><span style="color: #73d216;">return constructed</span>
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">mp3</span> = <span style="color: #e9b2e3;">multipart_t</span>::decode(msg);
+</pre>
+</div>
+
+<p>
+Note this last one is a static class method.  The same can be done with free functions which also allow the flexibility to run the codec on other types.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;<span style="color: #8cc4ff;">message_t</span>&gt; <span style="color: #fcaf3e;">msgs</span>, <span style="color: #fcaf3e;">msgs2</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">msg</span> = encode(msgs);
+decode(msg, <span style="color: #e9b2e3;">std</span>::back_inserter(msgs2));
+
+<span style="color: #e9b2e3;">std</span>::<span style="color: #8cc4ff;">vector</span>&lt;const_buffer&gt; <span style="color: #fcaf3e;">cbufs</span>;
+<span style="color: #b4fa70;">auto</span> <span style="color: #fcaf3e;">msg</span> = encode(cbufs);
+<span style="color: #8cc4ff;">multipart_t</span> <span style="color: #fcaf3e;">mp</span>;
+decode(msg, <span style="color: #e9b2e3;">std</span>::back_inserter(mp));
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Brett Viren</p>
+<p class="date">Created: 2020-04-12 Sun 16:13</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

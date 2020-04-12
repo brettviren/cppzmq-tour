@@ -1,0 +1,11 @@
+#+title: cppzmq tour
+
+This repo holds an informal tour of the [[https://github.com/zeromq/cppzmq][cppzmq]] package from the [[https://zeromq.org][ZeroMQ community]].  This is not an official document and based on just my own understand.  Corrections of any mistakes are very welcome.  Please report them as issues to this repository and don't bother the good folks over at *cppzmq*.
+
+With caveats said, maybe it helps someone.  
+
+The document is a single file and may be read in Emacs org mode or online at:
+
+- [[file:index.org][GitHub org rendering]]
+- [[https://brettviren.github.io/cppzmq-tour/][Exported web page]]
+
