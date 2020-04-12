@@ -7,5 +7,5 @@ With caveats said, maybe it helps someone.
 The document is a single file and may be read in Emacs org mode or online at:
 
 - [[file:index.org][GitHub org rendering]]
-- [[https://brettviren.github.io/cppzmq-tour/index.html][Exported web page]
+- [[https://brettviren.github.io/cppzmq-tour/index.html][Exported web page]]
 
