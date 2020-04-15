@@ -8,6 +8,7 @@
 #+HTML_HEAD: <style> li{max-width:800px;}</style>
 #+LINK: api http://api.zeromq.org/master:%s
 #+MACRO: zman [[http://api.zeromq.org/master:$1][~$1($2)~]]
+#+MACRO: czman [[http://czmq.zeromq.org/czmq4-0:$1][~$1($2)~]]
 
 * Introduction
   :PROPERTIES:
@@ -15,30 +16,38 @@
   :ID: intro
   :END:
 
-The [[https://zeromq.org/][ZeroMQ]] project [[https://github.com/zeromq/cppzmq][cppzmq]] is a C++ binding for [[https://github.com/zeromq/libzmq/][libzmq]].  With it we can exercise the power of ZeroMQ with idiomatic, modern C++.  The bindings provide type safety, exception-based error reporting, the RAII approach to resource management.  Most *cppzmq* functionality will work with C++11 and even older and here we consider features requiring C++17 and we ignore deprecated interfaces.
+The [[https://zeromq.org/][ZeroMQ]] project [[https://github.com/zeromq/cppzmq][cppzmq]] provides C++ bindings for [[https://github.com/zeromq/libzmq/][libzmq]].  With them we can exercise the power of ZeroMQ with idiomatic, modern C++.  The bindings provide type safety, exception-based error reporting, the RAII approach to resource management.  Most *cppzmq* functionality will work with C++11 and even older and here we consider features requiring C++17 and we ignore deprecated interfaces.
+
+** This document
+
+In this document, I tour the main parts of the *cppzmq* package so I can learn them better.  I write down what I learn along the way so maybe others can learn something too.
+
+Brevity is attempted and so the general concepts of ZeroMQ are assumed to already be understood.  If you, the curious reader, have not yet done so please do yourself a big favor and read the entire [[http://zguide.zeromq.org/][ZeroMQ Guide]].  Read it at least twice.  I think gets even better each time I read it as I find something new and useful that I had previously missed.
+
+This tour may not be needed by everyone.  We may make effective use of *cppzmq* simply by reading its header files and maybe checking the unit tests.  In some cases we may also need to refer to the *libzmq* API documentation which should be installed on your system as Unix man pages (~man zmq~ to start) and which are available [[http://api.zeromq.org/][online]].  This document attempts to distill what was learned in the process of just such a reading.  I hope it may serve as a gentle narrative or tour that will help others quickly feel comfortable developing with *cppzmq*.
+
+#+begin_note
+The source for this document may be found at https://github.com/brettviren/cppzmq-tour.  Corrections, particularly in the form of pull requests, are welcome.  
+#+end_note
+
 
 ** Project contents
 
 The *cppzmq* package core is a header-only library providing the C++ ~namespace zmq::~.  Currently the library consists of two headers and here is a summary of what they provide:
 
-- ~zmq.hpp~ :: (single part) message, context, buffer, socket, monitor, poller
-- ~zmq_addon.hpp~ :: multipart and related functions and an active poller
+- [[https://github.com/zeromq/cppzmq/blob/master/zmq.hpp][~zmq.hpp~]] :: (single part) message, context, buffer, socket, monitor, poller
+- [[https://github.com/zeromq/cppzmq/blob/master/zmq_addon.hpp][~zmq_addon.hpp~]] :: multipart and related functions and another form of poller
 
-The package also provides substantial unit tests which can be mined for programming examples.  Its [[https://github.com/zeromq/cppzmq/blob/master/README.md][README]] file gives instructions for formal  installation and one very simple option is copying the base ~zmq.hpp~ and optionally ~zmq_addon.hpp~ to our own package.
+Most of the goodies are in ~zmq.hpp~ and we go through them in order they appear in that file.  The goodies in ~zmq_addon.hpp~ are just as good and I feel there's no need for a separation.  All my *cppzmq* projects benefit from both.
 
-** This document
-
-The general concepts of ZeroMQ are assumed here.  If you, the curious reader, have not yet done so please do yourself a big favor and read the entire [[http://zguide.zeromq.org/][ZeroMQ Guide]].  Read it at least twice.  I think gets even better each time I read it as I find something new and useful that I had previously missed.
-
-We may make effective use of *cppzmq* by reading its header files and maybe checking the unit tests.  In some cases we may also refer to the *libzmq* API documentation as the installed Unix man pages (~man zmq~ to start) or [[http://api.zeromq.org/][online]].
-This document attempts to distill what was learned in the process of just such a reading.  I hope it may serve as a gentle narrative or tour that will help others quickly feel comfortable developing with *cppzmq*.
+The package also provides substantial unit tests which can be mined for programming examples.  The package [[https://github.com/zeromq/cppzmq/blob/master/README.md][README]] file gives instructions for formal installation but one very simple option is copying the ~zmq.hpp~ and ~zmq_addon.hpp~ files right into our own package.
 
 * Messages
   :PROPERTIES:
   :CUSTOM_ID: messages
   :END:
 
-The ~message_t~ class from ~zmq.hpp~ is a C++ facade over an opaque ~zmq_msg_t~ from *libzmq*.  It is conceptually equivalent to the ~zframe_t~ from CZMQ, the high level C bindings to *libzmq*.  In ZeroMQ terms, ~message_t~ is a /single part/ message in that it holds a contiguous block of memory.  Later, (sections [[Socket]] and [[Multipart]]) the idea of multiple single part messages and multipart messages are covered.
+The ~message_t~ class from ~zmq.hpp~ is a C++ facade over an opaque ~zmq_msg_t~ from *libzmq*.  It is conceptually equivalent to the {{{czman(zframe,3)}}} from [[http://czmq.zeromq.org/][CZMQ]], the high level C bindings to *libzmq*.  In ZeroMQ terms, ~message_t~ is a /single-part/ message in that it holds a contiguous block of memory.  Later, (sections [[Socket]] and [[Multipart]]) the idea of multiple single-part messages and multipart messages are covered.
 
 ** Creating messages
    :PROPERTIES:
@@ -56,21 +65,21 @@ Here are some examples of constructing a ~message_t~:
   zmq::message_t msg(size);
 
   // Initialize internal memory with a copy of external data.
-  const char data[s] = {0};
-  zmq::message_t msg(data, size);
+  const char bytes[s] = {0};
+  zmq::message_t msg(bytes, size);
 
   // Or, from string literal (see also str_buffer).
   zmq::message_t msg("hello world!", 12);
 
   // Initialize through iteration on a container.
-  std::vector<int> data = {1,2,3};
-  zmq::message_t msg(data.begin(), data.end());
-  // or simply
-  zmq::message_t msg(data);
+  std::vector<int> ivec = {1,2,3};
+  zmq::message_t msg(ivec.begin(), ivec.end());
+  // or more simply
+  zmq::message_t msg(ivec);
   
   // Zero-copy provision with custom deallocation callback.
   // Wraps zmq_msg_init_data(3), see man page for details.
-  zmq::message_t msg(data, size, myfree, nullptr);
+  zmq::message_t msg(byte, size, myfree, nullptr);
 
   // Move/swap the data of one message into a new one
   zmq::message_t msg2(msg);
@@ -95,10 +104,10 @@ We can also "rebuild" an existing message.  The methods to do this mirror the co
   msg.rebuild(size);
 
   // Allocate and set with a copy
-  msg.rebuild(data, size);
+  msg.rebuild(bytes, size);
 #+end_src
 
-There is also a zero-copy version similar to the zero-copy constructor which is not shown above.
+Not included here is a zero-copy version similar to the zero-copy constructor shown above.
 
 ** Accessing data in a message
    :PROPERTIES:
@@ -168,7 +177,7 @@ The *RADIO/DISH* sockets have a concept similar to *SERVER/CLIENT* routing ID an
 
 *** Metadata Properties
 
-More generally, messages may carry per-connection metadata "properties".  The key and values for these are of string.  We'll describe how these may be set through [[Socket][socket options]] later but for now here is an example of how properties may be retrieved.
+More generally, messages may carry per-connection metadata "properties".  The key and values for these are of type string.  We'll describe how these may be set through [[Socket][socket options]] later but for now here is an example of how properties may be retrieved.
 
 #+begin_src c++
   // Get system property 
@@ -213,7 +222,7 @@ Either type of buffer may be constructed directly as in this example:
 
 #+end_src
 
-We are also given a variety of functions named ~buffer()~ to construct buffers in useful ways.  We give some examples next and will see later some examples of how to buffers in the sections [[Socket]] and [[Multipart]].
+We are also given a variety of functions named ~buffer()~ to construct buffers in useful ways.  We give some examples next and will see later some examples of how to use buffers in the sections [[Socket]] and [[Multipart]].
 
 #+begin_src c++
   // Fodder data from previous example
@@ -247,7 +256,7 @@ Once constructed, buffers are rather simple but we can operate on them to narrow
   mbuf += mbuf.size()/2;
    #+end_src
 
-Why do this?  One very useful pattern is for an application to take some action based on the prefix or postfix of a message.  This narrowing can be performed after this information is used and the remainder can be forwarded to an output socket.  No copying needed.
+Why do this narrowing?  One very useful pattern is for an application to take some action based on the prefix or postfix of a message.  This narrowing can be performed after this information is used and the remainder can be forwarded to an output socket.  No copying needed.
 
 ** Access buffer data
 
@@ -265,7 +274,7 @@ And, that's about it.
   :CUSTOM_ID: context
   :END:
 
-The ~context_t~ from ~zmq.hpp~ embodies an opaque *libzmq* context such as created by {{{zman(zmq_ctx_new,3)}}}.  A context is used by ZeroMQ to collect and manage set of sockets which the application creates on/in the context.  The context is thread safe (unlike some sockets) and may be shared between threads without concern for locking at the application level.  
+The ~context_t~ from ~zmq.hpp~ embodies an opaque *libzmq* context such as created by {{{zman(zmq_ctx_new,3)}}}.  A context is used by ZeroMQ to collect and manage a set of sockets which the application creates on/in the context.  The context is thread safe (unlike some sockets) and may be shared between threads without concern for locking at the application level.  
 
 ** Creating a context
    :PROPERTIES:
@@ -279,14 +288,14 @@ Almost always we create the default context:
   zmq::context_t ctx;
 #+end_src
 
-A move constructor is also available.  After construction, various context options may be set and queried and *cppzmq* provides ~ctx.set()~ and ~ctx.get()~ to do this.  I have yet to use them but we may chack {{{zman(zmq_ctx_set,3)}}} for anything interesting.
+A move constructor is also available.  After construction, various context options may be set and queried and *cppzmq* provides ~ctx.set()~ and ~ctx.get()~ to do this.  I have yet to use them but we may check {{{zman(zmq_ctx_set,3)}}} for anything interesting.
 
 ** Context life cycle
    :PROPERTIES:
    :CUSTOM_ID: context-life
    :END:
 
-We can not copy a context.  We can move it but typically we will construct it, keep it alive as long as we need the sockets we create with it and if needed pass it by reference.  Here is a contrived example.
+We can not copy a context but we can move.   Typically, we will construct it, keep it alive as long as we need the sockets that we have created with it and if we need it in some other code context we may pass it by reference.  Here is a contrived example.
 
 #+begin_src c++
   void run_app(zmq::context_t& ctx);
@@ -298,7 +307,7 @@ We can not copy a context.  We can move it but typically we will construct it, k
   }
 #+end_src
 
-In most applications, we will let the ~context_t~ destruct and that will tear down our sockets.  If we must do that sooner than destruction, we may:
+In most applications, we will let the ~context_t~ destruct and that will tear down our sockets.  We may also tear down even sooner:
 
 #+begin_src c++
   // Cease any blocking operations in progress.
@@ -314,7 +323,7 @@ In most applications, we will let the ~context_t~ destruct and that will tear do
   :CUSTOM_ID: sockets
   :END:
 
-The heart of ZeroMQ is the socket and for it *cppzmq* supplies us with the class ~socket_t~.  There exists too much useful information on the intriguing variety of ZeroMQ sockets to repeat here.  A concise and definitive source is {{{zman(zmq_socket, 3)}}}.  Really, read that carefully as it answers a large fraction of questions I have had and see asked by others.
+The heart of ZeroMQ is the socket and for it *cppzmq* supplies us with the class ~socket_t~.  There exists too much useful information on the intriguing variety of ZeroMQ sockets to repeat here.  A concise and definitive source is {{{zman(zmq_socket,3)}}}.  Really, read that carefully as it answers a large fraction of questions I have had and see asked by others.
 
 ** Socket life cycle
    :PROPERTIES:
@@ -322,7 +331,7 @@ The heart of ZeroMQ is the socket and for it *cppzmq* supplies us with the class
    :END:
 
 
-To be useful, sockets must be created with a *context* (which we covered in section [[Context]]) and a socket type identifier.  In *libzmq* the type is identified with an integer, usually as provided by a CPP macro like ~ZMQ_PUB~.  In *cppzmq* (in C++11) we may still use these macros or integers or we may use an ~enum class socket_type~.
+To be useful, sockets must be created with a *context* (which we covered in section [[Context]]) and a socket type identifier.  In *libzmq* the type is identified with an integer, usually as provided by a CPP macro like ~ZMQ_PUB~.  In *cppzmq* (in C++11) we may still use these macros or bare integers or we may use an ~enum class socket_type~.
 
 #+begin_src c++
   using namespace zmq;
@@ -331,7 +340,11 @@ To be useful, sockets must be created with a *context* (which we covered in sect
   socket_t sub(ctx, socket_type::sub);
 #+end_src
 
-An "empty" socket may be constructed and later receive the contents of another through a move assignment.  A socket may also be move-constructed.  But we can not copy a socket and depending on the type may not use it from multiple threads (with some caveats) so we will usually construct it right where it is needed.
+A default socket may be constructed and later swap guts with another socket through a move assignment.  A socket may also be move-constructed.  But we can not copy a socket.   
+
+#+begin_caution
+Not just for *cppzmq*, we must take care that all ZeroMQ sockets besides *SERVER*, *CLIENT*, *RADIO* and *DISH* must not be used from any thread other than the one in which they were created.  Some caveats apply but best thing is just don't do it.
+#+end_caution
 
 When a socket destructs or if its ~socket_t::close()~ method is explicitly called, the underlying *libzmq* socket will be destroyed via {{{zman(zmq_close,3)}}}.  
 
@@ -340,7 +353,7 @@ When a socket destructs or if its ~socket_t::close()~ method is explicitly calle
    :CUSTOM_ID: socket-link
    :END:
 
-ZeroMQ sockets link up with each other via transport addresses (see eg {{{zman(zmq_tcp,7)}}}, {{{zman(zmq_ipc,7)}}}, {{{zman(zmq_inproc,7)}}}).  One or more sockets may "bind" to an address and one or more may "connect".  At least one of each type of link must be made for messages to be exchanged.  Other rules apply such as only certain socket types may intercommunicate and some socket types do not work with some transports.  These rules are all general to *libzmq*.  It's up to us to write applications that follow these rules while *cppzmq* provides us very simple ways to form the links.
+ZeroMQ sockets link up with each other via transport addresses (see eg {{{zman(zmq_tcp,7)}}}, {{{zman(zmq_ipc,7)}}}, {{{zman(zmq_inproc,7)}}}).  One or more sockets may "bind" to an address and one or more may "connect".  At least one of each type of link must be made for messages to be exchanged.  Other rules apply.  For example, only certain socket types may intercommunicate and some socket types do not work with some transports.  These rules are all general to *libzmq* (not just *cppzmq*).  It's up to us to write applications that follow these rules while *cppzmq* provides us very simple ways to form the links.
 
 #+begin_src c++
   const std::string addr = "tcp://127.0.0.1:5678";
@@ -357,7 +370,7 @@ Note the lack of return values.  A ~zmq::error_t~ will be thrown if something go
 
 ** Sending
 
-We have several ways to send with *cppzmq* although several are deprecated.  Here, let's only focus on the preferred methods.  The choice is to pass a ~message_t~ by reference or by move or to pass a ~const_buffer~.  In all cases we must also provide "send flags". 
+We have several ways to send with *cppzmq* and several more which are deprecated.  Here, let's focus on the preferred methods.  The choice is to pass a ~message_t~ by lvalue reference or by rvalue reference or to pass a ~const_buffer~ by value  In all cases we must also provide something called "send flags" which we will cover in a little bit
 
 #+begin_src c++
   zmq::message_t msg = ...;
@@ -372,13 +385,13 @@ We have several ways to send with *cppzmq* although several are deprecated.  Her
   auto res = sock.send(zmq::str_buffer("hello world"), zmq::send_flags::none);
 #+end_src
 
-The first two call {{{zman(zmq_msg_send,3)}}} and the last calls {{{zman(msg_send,3)}}} so see those man pages for any nitty gritty details.
+The first two call {{{zman(zmq_msg_send,3)}}} and the last calls {{{zman(msg_send,3)}}} so see those man pages for any nitty gritty details you may want.
 
 *** Send flags
 
 ZeroMQ accepts a few "hints" on how it is to treat a message when sending.  In *cppzmq* we may provide these with the ~enum class~ called ~zmq::send_flags~.  It is rare that I use anything other than ~zmq::send_flags::none~, as shown in the example, but two more are available:
 
-- ~dontwait~ :: instead of blocking, return immediately with error *EAGAIN*
+- ~dontwait~ :: if the send may block instead return immediately with error *EAGAIN*
 - ~sndmore~ :: the message is to be sent together with a following message
 
 Details of the applicability and meaning of these flags are found in {{{zman(zmq_msg_send,3)}}}.  
@@ -387,55 +400,56 @@ Details of the applicability and meaning of these flags are found in {{{zman(zmq
 
 That ~auto res~ holding the return of a ~send()~ in the example above is a ~zmq::send_result_t~ and that is a ~std::optional~ which may hold a ~size_t~ giving the number of bytes sent or nothing if *EAGAIN* error occurred and that only happens with a ~dontwait~ flag (see above).
 
-Regardless of the send flag used we *must* catch the send result because the ~send()~ methods are compiled marked with the C++ attribute ~[[nodiscard]]~.  We can be lazy and then do nothing with the ~res~ variable, but we should be more rigorous and compile with ~-Wunused~ (maybe via ~-Wall~) so we can be told when we fail to use the ~res~ send result.  Let's be even better and compile with ~-Werror~ to force us to do something with it.
+Regardless of the send flag used we *must* save the send result in a variable because the ~send()~ methods are compiled marked with the C++ attribute ~[[nodiscard]]~.  We can be lazy and then do nothing with the ~res~ variable, but we should be more rigorous and compile with ~-Wunused~ (maybe via ~-Wall~) so we can be told when we fail to use the ~res~ send result.  Let's be even better and compile with ~-Werror~ to really force us to do something with it.
 
-Regardless of what send flag we use, any other error that occurs will lead to a throw of the ~zmq::error_t~ exception so we do not require special compiler flags to be sure all other errors can not go silently unchecked.
+Regardless of what send flag we use, any other error that occurs will lead to a throw of the ~zmq::error_t~ exception so we do not require any special compiler flags to be sure all other errors can not go silently unchecked.
 
-One last comment.  In most cases we will use ~none~.  The API would be friendlier to us if ~none~ was set as a default.  However, that simpler call signature was already taken by other (now deprecated) versions of ~send()~.  Maybe in a future release, at the cost of a breaking change, this friendliness can be added.
+#+begin_note
+One comment to give my preference.  In most cases we will use ~none~.  The API would be friendlier to us if ~none~ was set as a default.  However, that simpler call signature was already taken by other (now deprecated) versions of ~send()~.  Maybe in a future release, at the cost of a breaking change, this friendliness can be added!
+#+end_note
 
 *** Send polling
 
-At times our application may send messages faster than downstream applications can receive.  Eventually, our socket's internal buffer will reach its "high water mark" (HWM) and enter what is called the "mute" state.  What happens next depends on the socket types used and is explained in nice detail in {{{zman(zmq_socket,3)}}}.  We may elect to let that built-in behavior handle the issue or we may develop our application to be more proactive.  We can learn if the next message will tip our socket into "mute" step by polling it prior to output (pollout).  Polling is described more in the section [[Poller]].
+At times our application may send messages faster than downstream applications can receive.  Eventually, our socket's internal buffer will reach its "high water mark" (HWM) and enter what is called the "mute" state.  What happens next depends on the socket types used and is explained in nice detail in {{{zman(zmq_socket,3)}}}.  We may elect to let that built-in behavior handle the issue or we may develop our application to be more proactive.  For that, we can learn if the next message will tip our socket into "mute" step by polling it prior to output (pollout).  A pollout is maybe not so commonly used compared to its opposite (pollin) which we will touch on in the next section and we will revisit polling in more detail in section [[Poller]].
 
 ** Receiving
 
-The opposite to sending to a socket is receiving from a socket.  We may do this with ~recv()~.  The misspelling of this verb has a long history in network programming and ZeroMQ and *cppzmq* cheerfully continues it.  Like with ~send()~.  we have a variety of ~recv()~ methods to choose from and some are deprecated and we stick to the few which are preferred.  We also may use a ~message_t~ or a ~mutable_buffer~ for the data and we must provide "send flags".
+The opposite to sending to a socket is receiving from a socket.  We may do this with ~recv()~.  The misspelling of this verb has a long history in network programming and ZeroMQ and *cppzmq* cheerfully continues it.  Like with ~send()~, we have one ~recv()~ method for a message one for a buffer and for both we give recv flags.  
 
 #+begin_src c++
 // Fill a message passed by reference
-auto res = sock.send(msg, zmq::recv_flags::none);
+auto res = sock.recv(msg, zmq::recv_flags::none);
 
 // Fill a suitably pre-sized mutable_buffer
-auto res = sock.send(buf, zmq::recv_flags::none);
+auto res = sock.recv(buf, zmq::recv_flags::none);
 #+end_src
 
-These two examples correspond to the low-level {{{zman(zmq_msg_recv,3)}}} and {{{zman(zmq_recv,3)}}} respectively.  When using the buffer to receive the data, take care that it has sufficient capacity to hold the expected message.  The care you take pays back in avoiding a copy.
+These two examples correspond to the low-level {{{zman(zmq_msg_recv,3)}}} and {{{zman(zmq_recv,3)}}} respectively.  When using the buffer to receive the data, take care that it has sufficient capacity to hold the expected message.  The care you must take pays back in avoiding a copy.
 
 *** Receive flags
 
-Like ~send()~, ~recv()~ takes flags but with this method we may often want to specify a flag besides ~none~.  There is however only one choice:
+Like ~send()~, ~recv()~ takes flags but with this method we may often want to specify a flag besides ~none~.  There is however only one other choice:
 
-- ~dontwait~ :: instead of blocking, return immediately with error *EAGAIN*
+- ~dontwait~ :: if the recv may block instead return immediately with error *EAGAIN*
 
-This flag can be useful if our application wants to do a "quick check" to see if a message is waiting, and to receive it.  If no message is sitting in the socket's input queue, the ~recv()~ will return immediately.  If we use ~none~ then ~recv()~ may, in principle, wait until the end of the universe.  
+This flag can be useful if our application wants to do a "quick check" to see if a message is waiting, and to receive it.  If no message is sitting in the socket's input queue, the ~recv()~ will return immediately.  If we use ~none~ then ~recv()~ may, in principle, wait until the end of the universe before returning.  
 
 *** Receive results
 
 Also like ~send()~, our ~recv()~ returns a ~std::optional~ result which is empty if *EAGAIN* was returned by *libzmq*.  Otherwise it returns the number of bytes received.   And likewise, this return value also must be saved to a variable.  The same comments about the importance to check this value as describe in the [[Send results]] section apply here.  
 
-When using a message to receive, a non-empty receive result will hold the size in bytes of the message.  
-
-When using a buffer to receive, it is extra important to check the receive result.  If non-empty it holds a ~zmq::recv_buffer_size~ which is a little ~struct~ holding two size attributes.  The ~size~ says how much data we received and the ~untruncated_size~ tells us how much data ZeroMQ wanted to give us.  If the two values differ we know our application failed to provide a large enough buffer.  Oops.
+When we ~recv()~ with ~message_t~, a non-empty receive result will hold the size in bytes of the message.  
+OTOH, when using a buffer, it is extra important to check the receive result.  If non-empty it holds a ~zmq::recv_buffer_size~ which is a little ~struct~ holding two size attributes.  The ~size~ says how much data we received and the ~untruncated_size~ tells us how much data ZeroMQ wanted to give us.  If the two values differ we know our application failed to provide a large enough buffer.  Oops.
 
 *** Receive polling
 
-Depending on the receive flags we can either assure an immediate return from ~recv()~ or we may risk it never returning.  That's a tough dichotomy to live with.  Thankfully we can assure that the call waits at most some time in between using receive polling.  This is discussed more below in the section [[Poller]].
+Depending on the receive flags we can either assure an immediate return from ~recv()~ or we may risk it never returning.  That's a tough dichotomy to live with.  Thankfully we can assure that the call waits at most some time in between those extremes using receive polling.  This is discussed more below in the section [[Poller]].
 
 ** Socket options
 
-Usually we develop an application that makes some ZeroMQ sockets, do our ~bind()/connect()~ and some ~send()/recv()~ and that's all we need for a lot of fun.  There's not much detail to worry about.  Sometimes we have a tough problem that needs something special and there's very likely a way that past ZeroMQ community have found a solution.  For us, we just need to find and set the right socket options.
+Usually we develop an application that makes some ZeroMQ sockets, do our ~bind()/connect()~ and some ~send()/recv()~ and that's all we need for a lot of fun.  There's not much detail to worry about.  Sometimes we have a tough problem that needs something special and there's very likely a way that past ZeroMQ community members have found a solution.  We then just need to find and set the right socket options.
 
-The rather long list of possible options (85 counted today) are given in {{{zman(zmq_setsockopt,3)}}}.  Their, they have names like ~ZMQ_IMMEDIATE~ or ~ZMQ_ROUTING_ID~ which are CPP macros expanding to some integer.  For each, *cppzmq* creates a type tag to use with friendly ~get()/set()~ methods on ~socket_t~.
+The rather long list of possible options (85 counted today) are given in {{{zman(zmq_setsockopt,3)}}}.  There they have names like ~ZMQ_IMMEDIATE~ or ~ZMQ_ROUTING_ID~ which are CPP macros expanding to some integer.  For each, *cppzmq* creates a type tag to use with friendly ~get()/set()~ methods on ~socket_t~.
 
 #+begin_src c++
   sock.set(zmq::sockopt::immediate, false);
@@ -458,7 +472,9 @@ One special socket option lets us set socket properties.  These can be retrieved
 
 ** Socket references
 
-Sockets in *cppzmq* can not be copied (but can be moved).  I can't think what it even means to copy a socket.  But, what we sometimes do want is different parts of our application code to share access to the same socket.  We are given ~zmq::socket_ref~ which refers to but does not own a socket.  With a socket ref our code can do almost everything it would do with a full socket object and it can know if the underlying socket has been closed.
+Sockets in *cppzmq* can not be copied (they can be moved) while it is usual that we want various parts of our application code to share access to the same socket.  We can pass around an lvalue reference to our socket but that is not always possible or convenient.
+
+To help with this, we are given a ~zmq::socket_ref~ which refers to but does not own a socket.  With a socket ref our code can do almost everything it would do with a full socket object and it can know if the underlying socket has been closed.
 
 #+begin_src c++
   zmq::socket_t sock(ctx, zmq::socket_type::pub);
@@ -482,28 +498,31 @@ Sockets in *cppzmq* can not be copied (but can be moved).  I can't think what it
 
 ** Socket handle
 
-Our nice *cppzmq* socket is just a facade over an opaque socket object from *libzmq*.  Rarely do we care about that but there may be cases where we do.  For example, if we want to directly call some *libzmq* function or maybe inter-operate with CZMQ code, we can do so by getting the underlying *libzmq* socket.  In ~zmq::socket_t~ this can be done like:
+Our nice *cppzmq* socket is a facade over an opaque socket object from *libzmq*.  Rarely do we care about that but there may be cases where we do.  For example, if we want to directly call some *libzmq* function or maybe inter-operate with CZMQ code, we can do so by getting the underlying *libzmq* socket. 
 
 #+begin_src c++
+  zmq::socket_t sock = ...;
   void* libzmq_socket = sock.handle();
-  // use libzmq to bind (we would probably never do this)
+  // use libzmq to bind.  We would probably never do this as we'd prefer
+  // to use sock.bind(), but it shows the possibility.
   int port = zmq_bind(libzmq_socket, "tcp://*:*");
 
-  // use CZMQ a socket (we just might one day do this)
+  // Use a CZMQ socket.  We might do something this if we use nice CZMQ
+  // CLASS like Zyre!
   zsock_t czmq_socket = zsock_new_pub("tcp://*:*");
   zmq::socket_ref sock(zmq::from_handle, zsock_resolve(czmq_socket));
 #+end_src
 
-Most of the time, let's just ignore we have a "handle" on the *libzmq* socket and rest assured that if we ever need it, it will be there.
+Most of the time, let's ignore we have a "handle" on the *libzmq* socket and rest assured that if we ever need it, it will be there.
 
 * Monitor
   :PROPERTIES:
   :CUSTOM_ID: monitor
   :END:
 
-ZeroMQ gives us great power and all it asks is that we stay out of its way.  To nag ZeroMQ asking tell us every detail about its internal operation is also to slow it down and impede its job.  We strive then to relax and use ZeroMQ sockets as they are intended, a sink or a source of messages to and from the cosmos.
+ZeroMQ gives us great power and all it asks is that we stay out of its way.  To nag ZeroMQ to tell us every detail about its internal operation is also to slow it down and impede its job.  We strive then to relax and use ZeroMQ sockets as they are intended, a sink or a source of messages to and from the cosmos.
 
-However, and zen platitudes aside, sometimes we must get uptight and worry about what our trusty ZeroMQ friend is busy doing.  For that we have a socket monitor, spelled ~zmq::monitor_t~ by *cppzmq*.  
+However, and zen platitudes aside, sometimes we must get uptight and worry about what our trusty ZeroMQ friend is busy doing.  For that, *cppzmq* provides us a socket monitor, spelled ~zmq::monitor_t~.
 
 The way for our application to make use of a ~monitor_t~ is to subclass it and implement some of the many ~monitor_t:on_event_*()~ virtual methods.  Each such method corresponds to one of the event types listed in {{{zman(zmq_socket_monitor,3)}}}.  We may also limit the events that our monitor reacts to by giving it a list of events as a bitmap.
 
@@ -522,8 +541,9 @@ The way for our application to make use of a ~monitor_t~ is to subclass it and i
   const int events = ZMQ_EVENT_CONNECTED;
   // Monitor sock using the given transport for internal communication
   connect_monitor_t mon(sock, "inproc://conmon", events);
-  // mon runs forever
+  // mon runs forever....
 
+  // Now, try it a different way:
   connect_monitor_t mon2;
   // here, default is ZMQ_EVENT_ALL
   mon2.init(sock, "inproc://conmon2");
@@ -533,17 +553,20 @@ The way for our application to make use of a ~monitor_t~ is to subclass it and i
   }
 #+end_src
 
-In this example, the construction of ~mon~ with arguments tells it to run forever.  This might make the rest of the code in our application jealous so better were we to put it running in its own thread.  For ~mon2~ we default construct and then after an explicit ~init()~ we may check for any activity with a timeout.  In this case we ask for all events but since our ~connect_monitor_t~ only implements one callback, all the other events just case silent no-op calls to the base class ~on_event_*()~ methods.
+In this example, the construction of ~mon~ with arguments tells it to run forever.  This might make the rest of the code in our application jealous so it would have been better were we to put it running in its own thread.  For ~mon2~ we default construct and then after an explicit ~init()~ we may check for any activity with a timeout.  In this case we ask for all events but since our ~connect_monitor_t~ implements but one callback, all the other events result in silent no-op calls to the base class ~on_event_*()~ methods.
 
-** No queue monitoring
+#+begin_note
 
-I have at times seen people asking how to monitor is the number of messages waiting in the input or output queue.  I've sometimes thought I absolutely needed this information myself.  However, this information is not available for monitoring.
+There is no queue monitoring.
 
-I have come to understand this choice is due to a few reasons.  First, to provide these values would require additional processing which would degrade the performance of ZeroMQ.  Second, is that by the time the application gets the answer the value has long gone stale, particularly in the case of high rate flow.  Third, there is not much use in an application knowing this information in the first place because if the socket is not in mute state then all is well, if it is in mute, the application can tell in ways described above and more next in section [[Poller]].  
+I have seen people asking how to monitor the number of messages waiting in the input or output queue of a socket.  I've sometimes thought I absolutely needed this information myself.  However, this information is not available for monitoring.
+
+I have come to understand this choice is due to a few reasons.  First, to provide these values would require additional processing which would degrade the performance of ZeroMQ.  Second, by the time the application gets the answer the value has long gone stale, particularly in the case of a high message rates.  Third, there is not much use in an application knowing this information in the first place because if the socket is not in mute state then all is well, if it is in mute, the application can tell in ways described above and more next in section [[Poller]].   Forth, there is no forth.
 
 In understanding my own motives to ask for this and trying to understand others, I conclude the design choice is correct and the requests are really uncovering examples of the [[https://en.wikipedia.org/wiki/XY_problem][X-Y problem]].  There's really some problem and we think peaking under ZeroMQ's skirts will solve it, but the real problem may be something else and there are other solutions.
 
-But, if one tosses aside these words as absurd ramblings, then we may always bolt on application managed buffers.  We may then feed a ~send()~ and drain a ~recv()~ as fast as possible and monitor the ~.size()~ of our application buffers.  If there is concern that our count is wrong because of ZeroMQ HWM we may get its value or we may set it to 1.  If you follow this approach, please benchmark throughput, latency and memory usage with and without application buffers.
+But, if one tosses aside these words as absurd ramblings, then we may always bolt on some application-managed message queues, eg as simple ~std::deque~.  We may then feed a ~send()~ and drain a ~recv()~ as fast as possible and monitor the ~.size()~ of our application-level queues.  If there is concern that ~.size()~ doesn't count what ZeroMQ holds we may set the socket HWM to, say a value of 1.  If you follow this approach, please benchmark throughput, latency and memory usage with and without application buffers and let me know the results.
+#+end_note
 
 * Poller
   :PROPERTIES:
@@ -552,13 +575,13 @@ But, if one tosses aside these words as absurd ramblings, then we may always bol
 
 In several places above we have alluded to something called polling.  It was even used, if maybe not noticed, in the example in the [[Monitor]] section when we call ~check_event(100)~.  This call takes at most 100 milliseconds to return.  If an event is waiting or arrives within that timeout, it will return even sooner.  Had we used a timeout of -1 the method will never return if no new monitored events were raised.
 
-This act of waiting for an event with a finite or infinite timeout is generally termed polling.  Most often, as with ~check_event()~ we poll for the event that a message is ready to ~recv()~.  This is called *pollin* ("poll in") or in *libzmq* spelling ~ZMQ_POLLIN~.  Less common, but important for robust applications is to poll on the ability to send.  This is called *pollout* or ~ZMQ_POLLOUT~.
+This act of waiting for an event with a finite or infinite timeout is generally termed /polling/.  Most often, as with ~check_event()~ we poll for the event that a message is ready to ~recv()~.  This is called *pollin* ("poll in") or in *libzmq* spelling ~ZMQ_POLLIN~.  Less common, but important for robust applications is to poll for the ability to send.  This is called *pollout* or ~ZMQ_POLLOUT~.
 
-A "poller" then helps application code to respond to a successful poll and to know that a poll timed out.  In *cppzmq* we have the ~zmq::poller_t~ in ~zmq.hpp~ and the ~active_poller_t~ from ~zmq_addon.hpp~.  
+A "poller" then helps application code to respond to a successful poll or to know that instead the poll timed out.  In *cppzmq* we have the ~zmq::poller_t~ in ~zmq.hpp~ and the ~active_poller_t~ from ~zmq_addon.hpp~.  
 
-** Simple poller
+** ~zmq::poller_t~
 
-In the following example, we construct two ~poller_t~ instances, one to poll on input and one to poll on output add some sockets and their associated events (pollin/pollout).  We then use the pollers to wait up to a timeout.  Depending on the return, our application reacts.  The reaction is a bit dodgy in the example, and would be more thoughtful in a real application.
+In the following example, we construct two ~poller_t~ instances, one to poll on input and one to poll on output add some sockets and their associated events (pollin/pollout).  We then use the pollers to wait up to a timeout.  Depending on the return, our application reacts.  
 
 #+begin_src c++
   // We could combine the pollers but here keep input and output polling
@@ -592,9 +615,13 @@ In the following example, we construct two ~poller_t~ instances, one to poll on 
   } 
 #+end_src
 
+#+begin_note
+The code that reacts to timeouts in this example is very good.  We will be more thoughtful in our real application.
+#+end_note
+
 *** Poller data
 
-In the example above you notice the ~poller_t<>~ declaration.  That empty template argument list sure is curious.  It may be associate some user data to a socket event being polled.  This user data is added along with the socket and event and is then made available in any event resulting from a poll.  Here is an example where the user data is of type ~int~.
+In the example above you notice the ~poller_t<>~ declaration.  That empty template argument list sure is curious.  We may fill it in order to associate some user data to a socket event being polled.  This user data is added along with the socket and event and is then made available in any event resulting from a poll.  Here is an example where the user data is of type ~int~.
 
 #+begin_src c++
   using mypoller_t = zmq::poller_t poller<int>;
@@ -608,13 +635,15 @@ In the example above you notice the ~poller_t<>~ declaration.  That empty templa
   }
 #+end_src
 
-Each socket/event registered with ~.add()~ can have its own user data but they must all of the same (pointer to) type.
+Each socket/event registered with ~.add()~ can have its own user data but they must all be of the same (pointer to) type.
 
-** Active poller
+** Interlude
 
-So far this tour has taken us through just ~zmq.hpp~ and here in the middle of this section we move to ~zmq_addon.hpp~.  The distinction here is somewhat arbitrary.  Parts of ~zmq_addon.hpp~ are more "core" for my own use while parts of ~zmq.hpp~ are not so "core" to me.  So, let us not worry that we now switch our focus to a header that on the surface may sound somehow secondary.
+So far this tour has taken us through ~zmq.hpp~ and here, right in the middle of this section, we move to ~zmq_addon.hpp~.  As noted above, this switch of files feels somewhat arbitrary to me.  Parts of ~zmq_addon.hpp~ are more "core" for my own use while parts of ~zmq.hpp~ are not so "core" to me.  So, let us not worry that we now switch our focus to a header that on the surface may sound somehow secondary.  It's in fact full of more goodies.
 
-The ~active_poller_t~ is created and filled with sockets in a similar manner as ~poller_t~.  In fact it uses a ~poller_t~ under the hood.  However, its ~add()~ method takes a third argument which is a ~std::function<void(event_flags)>~ that will be called back with that socket's event is seen.  
+** ~zmq::active_poller_t~
+
+The ~active_poller_t~ is created and filled with sockets in a similar manner as ~poller_t~.  In fact it uses a ~poller_t~ under the hood.  However, its ~add()~ method takes a third argument which is a ~std::function<void(event_flags)>~ and that function will be called when that event is seen.
 
 This allows our application the option of structuring its response to events differently.  Instead of complexity held inside the loop, it can be placed in functions or lambdas.
 
@@ -629,7 +658,7 @@ This allows our application the option of structuring its response to events dif
   while (true) {
       auto n = ap.wait(timeout);
       if (n) {
-          std::cout << "got " << n << std::endl;        
+          std::cout << "got " << n << " sockets hit\n";
       }
       else {
           std::cout << "timeout" << std::endl;
@@ -642,13 +671,23 @@ This allows our application the option of structuring its response to events dif
   :CUSTOM_ID: multipart
   :END:
 
-In the various ZeroMQ literature there is often a lot of confusion about /multipart messages/.  In some places it talks about the same object as being a message or a message part.  Language is fluid and as long as we know what it meant, that's fine.  But, I for one took a long time to figure out what was meant.
+When I first started to learn ZeroMQ I learned lots of interesting things and also struggled with lots of confusion.   One thing that confused me extra was /multipart messages/.  Take for example the delightful puzzle from {{{zman(zmq_msg_send,3)}}} which describes
 
-In *cppzmq* terms and objects are made a bit more clear.  Previously in this tour, we described a ~message_t~ as being of a /single part/ because it held data in a single contiguous block of memory.  We will stick to that but dip into the confusion that is /multipart/ or what I think it more clear to say /multiple single part messages/.  We then will describe the ~multipart_t~ object of *cppzmq* which allows one to aggregate multiple single part ~message_t~ in useful ways. 
+#+begin_src c++
+int zmq_msg_send (zmq_msg_t *msg, void *socket, int flags);
+#+end_src
+
+#+begin_quote
+*Multi-part messages:* A 0MQ message is composed of 1 or more message parts. Each message part is an independent zmq_msg_t in its own right. 0MQ ensures atomic delivery of messages: peers shall receive either all message parts of a message or none at all. The total number of message parts is unlimited except by available memory.
+#+end_quote
+
+So, we send a ~zmq_msg_t~ which is a message, but really it's a message part and we can send many of them but really we send only one.  Okay, okay, so, it all kind of makes sense now, but at the start it was all rather confusing.
+
+Thankfully, things are more clear and precise using *cppzmq*'s terms and objects.  Previously in this tour, we described a ~message_t~ as being of a /single part/ because it held data in a single contiguous block of memory.  We will stick to that but then describe how *cppzmq* allows us to use multiple calls to ~send()~ or ~recv()~ in order to transmit /multiple, single-part/ messages altogether.  Finally, we will describe the ~multipart_t~ object of *cppzmq* which allows us to aggregate /multiple, single-part/ ~message_t~ in useful ways and then ~send()~ or ~recv()~ them with but a single call.  Finally we describe how to send and receive multiple parts with out even any ~message_t~ at all.
 
 ** Multiple messages
 
-ZeroMQ has the concept of "more".  We send a (single part) message but we tell the socket, "you know what, next I'm gonna send you another message and I want you to wait until I do that and then transmit both together".  That's "more".  This is done with *cppzmq* like:
+ZeroMQ has the concept of "/more/".  As we send a single (single-part) message we also tell the socket, "you know what, next I'm gonna send you another message and I want you to wait until I do that and then you can transmit both of them together".  This is done with *cppzmq* like:
 
 #+begin_src c++
   zmq::message_t msg1, msg2;
@@ -656,9 +695,13 @@ ZeroMQ has the concept of "more".  We send a (single part) message but we tell t
   res = sock.send(msg2, zmq::send_flags::none);
 #+end_src
 
-This chain can of course go on for more than just two messages.  As it does, ZeroMQ is collecting these messages behind the scenes just waiting for that final ~none~.  When it comes it races to do some magic to assure every message is delivered to all linked sockets or none of them are.
+That's "/more/" and of course you can have more "/more/" messages than just the first one.   The chain can continue and, as it does, ZeroMQ is collecting these messages behind the scenes, waiting for that final ~none~.  When ~none~ comes, ZeroMQ races to do its magic to assure every message in the chain is delivered to all linked sockets or none of them are.  
 
-On the other end we must write our application to expect this chain of separate but together messages.
+#+begin_note
+Thus, the ~zmq_msg_send(3)~ riddle is understood.  There may be multiple (single-part) messages (by which I mean some ~zmq_msg_t~'s) that the application provides to a socket for sending.  Then, once given the go-ahead, ZeroMQ will transport all their data as a single message.
+#+end_note
+
+On the other end of the transport, ZeroMQ receives the data from these multiple "/more/" messages and presents it to the application through multiple calls to ~recv()~.   We must write our application to expect this chain of separate-but-together messages and *cppzmq* provides the help we need.
 
 #+begin_src c++
   zmq::message_t msg1, msg2;
@@ -671,11 +714,13 @@ On the other end we must write our application to expect this chain of separate 
   }
 #+end_src
 
-This ZeroMQ concept of "more" is kind of a micro protocol and kind of an optimization to allow truly large messages to be transmitted in a way that their ordering is assured regardless of how many peers may be attempting to otherwise multiplex their streams.  It can be needed but it can also be an unwanted complication.  ZeroMQ is still buffer these messages in memory and still transmitting them sequentially, so why not allow the application to do that packaging itself.
+#+begin_note
+This ZeroMQ concept of "more" is kind of a "micro protocol" and kind of an optimization to allow truly large messages broken up to while still transmitted in a way that their ordering is assured regardless of how many peers may be attempting to otherwise multiplex their streams.  This can be needed but it can also add unwanted complication.  ZeroMQ is still buffering these messages in memory and still transmitting them sequentially, so why not allow the application to do that packaging itself?  Well....
+#+end_note
 
 ** Multipart messages
 
-Enter ~multipart_t~.  I hesitate to call this a "message" because it's really multiple messages which are aggregated into a collection (called ~multipart_t~).  Behind the scenes a ~multipart_t::send()~ and ~::recv()~ are simply handling multiple single part ~message_t~ objects as above.  Later we will describe how this can be done without even forming a ~multipart_t~ using code is sort of like what buffers are to ~message_t~.
+Enter ~multipart_t~.  I hesitate to call this a "message" because it's really multiple messages which are aggregated into a collection (called ~multipart_t~).  Behind the scenes a ~multipart_t::send()~ and ~::recv()~ are simply handling multiple single-part ~message_t~ objects with "/more/", as described above.  Later we will describe how this can be done without even forming a ~multipart_t~ by using code which is to send/recv sort of like what buffers are to ~message_t~.
 
 But first ~multipart_t~, which we should think about as if it were an STL collection (and in fact it uses a ~std::deque<message_t>~ under the covers).  We can construct them in many ways.
 
@@ -687,7 +732,7 @@ But first ~multipart_t~, which we should think about as if it were an STL collec
   multipart_t first_from_string(std::string("hello world"));
 #+end_src
 
-The latter constructors only fill in an initial element of the ~multipart_t~ container.  We can add more ~message_t~ elements
+As the variable names are meant to imply, these latter constructors fill in an initial element of the ~multipart_t~ container.  We can then add more ~message_t~ elements:
 
 #+begin_src c++
   message_t msg;
@@ -705,7 +750,7 @@ The latter constructors only fill in an initial element of the ~multipart_t~ con
   mp.push_back(msg);              // same as push, but STL spelling
 #+end_src
 
-We can also remove messages (parts)
+We can also remove a message (a part):
 
 #+begin_src c++
   // from front
@@ -737,7 +782,7 @@ We can query and iterate on the ~multipart_t~ in many ways:
   
 #+end_src
 
-Finally, getting back to /multiple single part message/ transmission we may do:
+Finally, getting back to /multiple single-part message/ transmission we may do:
 
 #+begin_src c++
   // Clear and receive one or MORE message_t from a socket
@@ -747,9 +792,11 @@ Finally, getting back to /multiple single part message/ transmission we may do:
   mp.send(sock);
 #+end_src
 
+This happily hides all the "/more/" business from our delicate eyes. 
+
 *** Multipart ~send()~ and ~recv()~ without ~multipart_t~
 
-Building up a ~multipart_t~ just to send and receive its data can require unwanted code and memory copies.  If your application already has some collection of data, why should you go to this extra trouble?  The answer is, you may not need to.
+Building up a ~multipart_t~ to send and receive data that is already "multipart'ish" can require unwanted code and memory copies.  If your application already has some collection of data, why should you go to this extra trouble?  The answer is, you may not need to.
 
 The templated ~recv_multipart()~ and ~send_multipart()~ free functions are provided.  They may be used with a ~multipart_t~ as a replacement for that classes ~send()~ and ~recv()~.  But they may work with other collections holding ~message_t~ or buffers or other types.  First some receives.
 
@@ -774,22 +821,35 @@ And some sends.
   auto res = send_multipart(sock, mbufs);
 #+end_src
 
-* Codec
+** Codec
   :PROPERTIES:
   :CUSTOM_ID: codec
   :END:
 
-The previous section shows how *cppzmq* can transmit a sequence of multiple single part messages in the "ZeroMQ" way.  CZMQ introduced another way to do this and that is to encode the sequence into a single message.  CZMQ calls a ~message_t~ a ~zframe_t~ and a ~multipart_t~ a ~zmsg_t~ but let's not let this confuse us.  We call the process of concatenation "encoding" and the reverse "decoding" and together they form a "codec".
+We just saw how *cppzmq* can transmit a sequence of multiple, single-part messages in the ZeroMQ "/more/" way and how the ~multipart_t~ can be used to bundle up the "/more/"'ing inside the application.  CZMQ introduced another way to handle multiple, single-part messages and that is to encode them into a single, single-part message inside the application.  
 
-** Why a codec
+#+begin_note
+A bit of nomenclature.  As was mentioned, what *cppzmq* calls a ~message_t~, CZMQ writes ~zframe_t~.  What *cppzmq* calls ~multipart_t~, CZMQ says ~zmsg_t~.  As described in {{{czman(zmsg,3)}}}, the CZMQ function  ~zmsg_encode(zmsg_t*)~ returns a ~zframe_t~.  That ~zmsg_t~ is a multi-part message.  Then back in *cppzmq* we say we can encode one of its ~multipart_t~ into one ~message_t~.  Of course, an encode is not useful without a decode and together we have a codec.
+#+end_note
 
-With the nice ~multipart_t~ class methods and free functions just described, why introduce this codec?  The reason is that the new thread-safe sockets such as the *SERVER/CLIENT* pair do not support the "more" algorithm.  They can only send (single part) messages.  If our application protocol requires transmitting an atomic sequence of messages we must do something to squish them into a single message.  A codec for this can be invented by any application but interoperability is increased if a common one is offered in the base *cppzmq*.
+*** Why a codec
 
-The CZMQ / *cppzmq* codec is rather simple.  A number of messages are input to the encoding function and for each  message its size is emitted followed by the message data.  If the message is smaller than 255 bytes, the size value is stored in a single byte.  Otherwise a literal byte value of ~0xFF~ is emitted followed by the message size as a four byte value.  The decode works in reverse.  If the first byte is ~0xFF~ it knows the next four provide up the message size else the first byte provides the size.  The decoder then consumes a number of bytes as given by that size and fills a ~message_t~.  This repeats until the byte stream is exhausted or a parse error is encountered.
+With the nice ~multipart_t~ class methods and free functions for send/recv that were just described, why introduce a codec?  The reason is that the new thread-safe sockets such as *SERVER/CLIENT* do not support the "/more/" algorithm at all.  They send one ~message_t~ at a time  Something must be done in if application protocol requires transmitting an sequence of messages in an atomic manner.  The inspiration for this was [[https://github.com/brettviren/generaldomo][generaldomo]] which generalizes the Majordomo protocol (v1) to use *SERVER/CLIENT* as well as *ROUTER/DEALER*.
 
-** Using the codec
+So, we must do something to squish multiple messages into single one.  A codec for this can be invented by any application but interoperability is increased if a common one is shared by various ZeroMQ bindings and so the one used in CZMQ is offered in the *cppzmq*.
 
-There are two ways to use the codec.  One may call methods on ~multipart_t~ or use free functions in analogy to how multipart ~send()/recv()~ was described above.  First, via ~multipart_t~ methods. 
+#+begin_note
+The CZMQ / *cppzmq* codec is rather simple but not well documented outside the source code.  Let this count as documentation until some interested person writes an [[https://rfc.zeromq.org/][ZeroMQ RFC]].  
+
+A number of messages are input to the encoding function and for each  message its size is emitted followed by the message data.  If the message is smaller than 255 bytes, the size value is stored in a single byte.  Otherwise a literal byte value of ~0xFF~ is emitted followed by the message size as a four byte value.  
+
+The decode works in reverse.  If the first byte is ~0xFF~ the decoder knows the next four bytes provide the message size else the first byte provides the size.  The decoder then consumes a number of bytes as given by that size and fills a ~message_t~.  This repeats until the byte stream is exhausted or a parse error is encountered.
+#+end_note
+
+*** Using the codec
+
+Okay, enough blah blah about the codec.
+There are two ways to use it.  One may call methods on ~multipart_t~ or one may use free functions in analogy to how multipart ~send()/recv()~ was described above.  First, the ~multipart_t~ methods. 
 
 #+begin_src c++
   multipart_t mp;
@@ -803,7 +863,11 @@ There are two ways to use the codec.  One may call methods on ~multipart_t~ or u
   multipart_t mp3 = multipart_t::decode(msg);
 #+end_src
 
-Note this last one is a static class method.  The same can be done with free functions which also allow the flexibility to run the codec on other types.
+#+begin_caution
+Take care how this last one is a static class method.  You can call ~mp.decode(msg)~ and it returns a new ~multipart_t~ and does not touch the object ~mp~ used to call it.
+#+end_caution
+
+Here's the codec exercised with free functions.  They have the added flexibility to operate on buffers.
 
 #+begin_src c++
   std::vector<message_t> msgs, msgs2;
@@ -817,3 +881,6 @@ Note this last one is a static class method.  The same can be done with free fun
 #+end_src
 
 
+* FIN
+
+That's it.  Go forth and make the next great ZeroMQ application in C++!
