@@ -593,8 +593,8 @@ In the following example, we construct two ~poller_t~ instances, one to poll on 
   out_poller.add(output_socket, zmq::event_flags::pollout);
 
   const std::chrono::milliseconds timeout{100};
-  std::vector<zio::poller_event<>> in_events(2);
-  std::vector<zio::poller_event<>> out_events(1);
+  std::vector<zmq::poller_event<>> in_events(2);
+  std::vector<zmq::poller_event<>> out_events(1);
   while (true) {
       const auto nin = in_poller.wait_all(in_events, timeout);
       if (!nin) {
